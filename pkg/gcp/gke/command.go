@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jessequinn/drift-analysis-cli/pkg/analyzer"
 	"gopkg.in/yaml.v3"
 )
 
@@ -41,6 +42,9 @@ type GKEBaseline struct {
 	ClusterConfig  *ClusterConfig    `yaml:"cluster_config"`
 	NodePoolConfig *NodePoolConfig   `yaml:"nodepool_config,omitempty"`
 }
+
+// Compile-time interface implementation check
+var _ analyzer.Baseline = (*GKEBaseline)(nil)
 
 // GetName returns the baseline name implementing analyzer.Baseline interface
 func (b GKEBaseline) GetName() string {

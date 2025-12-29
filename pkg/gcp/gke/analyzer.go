@@ -6,6 +6,7 @@ import (
 
 	"time"
 
+	"github.com/jessequinn/drift-analysis-cli/pkg/analyzer"
 	container "google.golang.org/api/container/v1"
 )
 
@@ -129,6 +130,9 @@ func NewAnalyzer(ctx context.Context) (*Analyzer, error) {
 func (a *Analyzer) Close() error {
 	return nil
 }
+
+// Compile-time interface implementation check
+var _ analyzer.ResourceAnalyzer = (*Analyzer)(nil)
 
 // Analyze performs drift analysis implementing analyzer.ResourceAnalyzer interface
 func (a *Analyzer) Analyze(ctx context.Context, projects []string) error {

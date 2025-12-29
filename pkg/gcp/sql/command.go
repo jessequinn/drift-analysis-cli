@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jessequinn/drift-analysis-cli/pkg/analyzer"
 	"gopkg.in/yaml.v3"
 )
 
@@ -38,6 +39,9 @@ type SQLBaseline struct {
 	FilterLabels map[string]string `yaml:"filter_labels,omitempty"`
 	Config       *DatabaseConfig   `yaml:"config"`
 }
+
+// Compile-time interface implementation check
+var _ analyzer.Baseline = (*SQLBaseline)(nil)
 
 // GetName returns the baseline name implementing analyzer.Baseline interface
 func (b SQLBaseline) GetName() string {
