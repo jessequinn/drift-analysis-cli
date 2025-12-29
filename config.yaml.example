@@ -115,6 +115,21 @@ database_connections:
       expected_roles: 15
       expected_extensions: 3
       
+      # Ownership validation
+      expected_database_owner: "cloudsqlsuperuser"  # Database must be owned by this user
+      expected_table_owner: "postgres"              # Default owner for all tables
+      expected_view_owner: "postgres"               # Default owner for all views
+      
+      # Allowed and forbidden owners
+      allowed_owners:                               # Only these owners are allowed
+        - "postgres"
+        - "cloudsqlsuperuser"
+        - "app_user"
+      forbidden_owners:                             # These owners trigger violations
+        - "root"
+        - "admin"
+        - "test_user"
+      
       # Required objects (must exist)
       required_tables:
         - "public.users"
@@ -132,6 +147,15 @@ database_connections:
       # Forbidden objects (must not exist)
       forbidden_tables:
         - "public.temp_debug_table"
+        - "public.test_data"
+      
+      # Ownership exceptions (specific tables/views with different owners)
+      table_owner_exceptions:
+        "public.audit_log": "cloudsqlsuperuser"     # Audit table owned by superuser
+        "public.system_config": "cloudsqlsuperuser"
+      
+      view_owner_exceptions:
+        "public.admin_dashboard": "cloudsqlsuperuser"
   
   # Staging database (example without SSH tunnel)
   - name: "staging-app-db"

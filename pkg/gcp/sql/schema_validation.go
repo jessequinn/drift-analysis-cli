@@ -7,10 +7,20 @@ import (
 
 // SchemaValidationResult contains the results of schema baseline validation
 type SchemaValidationResult struct {
-	HasDrift         bool
-	CountMismatches  []CountMismatch
-	MissingObjects   []MissingObject
-	ForbiddenObjects []ForbiddenObject
+	HasDrift            bool
+	CountMismatches     []CountMismatch
+	MissingObjects      []MissingObject
+	ForbiddenObjects    []ForbiddenObject
+	OwnershipViolations []OwnershipViolation
+}
+
+// OwnershipViolation represents an object with incorrect ownership
+type OwnershipViolation struct {
+	ObjectType     string
+	ObjectName     string
+	ActualOwner    string
+	ExpectedOwner  string
+	ViolationType  string // "wrong_owner", "forbidden_owner", "database_owner"
 }
 
 // CountMismatch represents a mismatch in expected vs actual counts
@@ -39,9 +49,10 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	}
 
 	result := &SchemaValidationResult{
-		CountMismatches:  []CountMismatch{},
-		MissingObjects:   []MissingObject{},
-		ForbiddenObjects: []ForbiddenObject{},
+		CountMismatches:     []CountMismatch{},
+		MissingObjects:      []MissingObject{},
+		ForbiddenObjects:    []ForbiddenObject{},
+		OwnershipViolations: []OwnershipViolation{},
 	}
 
 	// Check expected counts
@@ -136,10 +147,167 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 		}
 	}
 
+	// Check database ownership
+	if baseline.ExpectedDatabaseOwner != "" && schema.Owner != baseline.ExpectedDatabaseOwner {
+		result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+			ObjectType:     "Database",
+			ObjectName:     schema.DatabaseName,
+			ActualOwner:    schema.Owner,
+			ExpectedOwner:  baseline.ExpectedDatabaseOwner,
+			ViolationType:  "database_owner",
+		})
+	}
+
+	// Check table ownership
+	allowedOwnersMap := make(map[string]bool)
+	for _, owner := range baseline.AllowedOwners {
+		allowedOwnersMap[owner] = true
+	}
+	
+	forbiddenOwnersMap := make(map[string]bool)
+	for _, owner := range baseline.ForbiddenOwners {
+		forbiddenOwnersMap[owner] = true
+	}
+
+	for _, table := range schema.Tables {
+		tableName := fmt.Sprintf("%s.%s", table.Schema, table.Name)
+		
+		// Check for forbidden owners
+		if forbiddenOwnersMap[table.Owner] {
+			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+				ObjectType:     "Table",
+				ObjectName:     tableName,
+				ActualOwner:    table.Owner,
+				ExpectedOwner:  "(any non-forbidden owner)",
+				ViolationType:  "forbidden_owner",
+			})
+			continue
+		}
+		
+		// Check specific exception first
+		if baseline.TableOwnerExceptions != nil {
+			if expectedOwner, hasException := baseline.TableOwnerExceptions[tableName]; hasException {
+				if table.Owner != expectedOwner {
+					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+						ObjectType:     "Table",
+						ObjectName:     tableName,
+						ActualOwner:    table.Owner,
+						ExpectedOwner:  expectedOwner,
+						ViolationType:  "wrong_owner",
+					})
+				}
+				continue
+			}
+			// Also check without schema prefix
+			if expectedOwner, hasException := baseline.TableOwnerExceptions[table.Name]; hasException {
+				if table.Owner != expectedOwner {
+					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+						ObjectType:     "Table",
+						ObjectName:     tableName,
+						ActualOwner:    table.Owner,
+						ExpectedOwner:  expectedOwner,
+						ViolationType:  "wrong_owner",
+					})
+				}
+				continue
+			}
+		}
+		
+		// Check against expected table owner
+		if baseline.ExpectedTableOwner != "" && table.Owner != baseline.ExpectedTableOwner {
+			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+				ObjectType:     "Table",
+				ObjectName:     tableName,
+				ActualOwner:    table.Owner,
+				ExpectedOwner:  baseline.ExpectedTableOwner,
+				ViolationType:  "wrong_owner",
+			})
+		}
+		
+		// Check against allowed owners (if specified)
+		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[table.Owner] {
+			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+				ObjectType:     "Table",
+				ObjectName:     tableName,
+				ActualOwner:    table.Owner,
+				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType:  "wrong_owner",
+			})
+		}
+	}
+
+	// Check view ownership
+	for _, view := range schema.Views {
+		viewName := fmt.Sprintf("%s.%s", view.Schema, view.Name)
+		
+		// Check for forbidden owners
+		if forbiddenOwnersMap[view.Owner] {
+			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+				ObjectType:     "View",
+				ObjectName:     viewName,
+				ActualOwner:    view.Owner,
+				ExpectedOwner:  "(any non-forbidden owner)",
+				ViolationType:  "forbidden_owner",
+			})
+			continue
+		}
+		
+		// Check specific exception first
+		if baseline.ViewOwnerExceptions != nil {
+			if expectedOwner, hasException := baseline.ViewOwnerExceptions[viewName]; hasException {
+				if view.Owner != expectedOwner {
+					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+						ObjectType:     "View",
+						ObjectName:     viewName,
+						ActualOwner:    view.Owner,
+						ExpectedOwner:  expectedOwner,
+						ViolationType:  "wrong_owner",
+					})
+				}
+				continue
+			}
+			if expectedOwner, hasException := baseline.ViewOwnerExceptions[view.Name]; hasException {
+				if view.Owner != expectedOwner {
+					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+						ObjectType:     "View",
+						ObjectName:     viewName,
+						ActualOwner:    view.Owner,
+						ExpectedOwner:  expectedOwner,
+						ViolationType:  "wrong_owner",
+					})
+				}
+				continue
+			}
+		}
+		
+		// Check against expected view owner
+		if baseline.ExpectedViewOwner != "" && view.Owner != baseline.ExpectedViewOwner {
+			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+				ObjectType:     "View",
+				ObjectName:     viewName,
+				ActualOwner:    view.Owner,
+				ExpectedOwner:  baseline.ExpectedViewOwner,
+				ViolationType:  "wrong_owner",
+			})
+		}
+		
+		// Check against allowed owners (if specified)
+		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[view.Owner] {
+			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
+				ObjectType:     "View",
+				ObjectName:     viewName,
+				ActualOwner:    view.Owner,
+				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType:  "wrong_owner",
+			})
+		}
+	}
+
 	// Determine if there's drift
 	result.HasDrift = len(result.CountMismatches) > 0 ||
 		len(result.MissingObjects) > 0 ||
-		len(result.ForbiddenObjects) > 0
+		len(result.ForbiddenObjects) > 0 ||
+		len(result.OwnershipViolations) > 0
 
 	return result
 }
@@ -178,6 +346,35 @@ func FormatValidationResult(result *SchemaValidationResult) string {
 		sb.WriteString("Forbidden Objects Found:\n")
 		for _, forbidden := range result.ForbiddenObjects {
 			sb.WriteString(fmt.Sprintf("  [ERROR] %s: %s (should not exist)\n", forbidden.ObjectType, forbidden.Name))
+		}
+		sb.WriteString("\n")
+	}
+
+	if len(result.OwnershipViolations) > 0 {
+		sb.WriteString("Ownership Violations:\n")
+		for _, violation := range result.OwnershipViolations {
+			switch violation.ViolationType {
+			case "database_owner":
+				sb.WriteString(fmt.Sprintf("  [ERROR] %s: %s - Owner: %s, Expected: %s\n",
+					violation.ObjectType,
+					violation.ObjectName,
+					violation.ActualOwner,
+					violation.ExpectedOwner,
+				))
+			case "forbidden_owner":
+				sb.WriteString(fmt.Sprintf("  [ERROR] %s: %s - Forbidden owner: %s\n",
+					violation.ObjectType,
+					violation.ObjectName,
+					violation.ActualOwner,
+				))
+			case "wrong_owner":
+				sb.WriteString(fmt.Sprintf("  [WARNING] %s: %s - Owner: %s, Expected: %s\n",
+					violation.ObjectType,
+					violation.ObjectName,
+					violation.ActualOwner,
+					violation.ExpectedOwner,
+				))
+			}
 		}
 		sb.WriteString("\n")
 	}

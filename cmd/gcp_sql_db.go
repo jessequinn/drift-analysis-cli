@@ -373,6 +373,9 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 				if len(validationResult.ForbiddenObjects) > 0 {
 					fmt.Printf("      Forbidden objects: %d\n", len(validationResult.ForbiddenObjects))
 				}
+				if len(validationResult.OwnershipViolations) > 0 {
+					fmt.Printf("      Ownership violations: %d\n", len(validationResult.OwnershipViolations))
+				}
 			} else {
 				fmt.Printf("    [OK] Matches baseline\n")
 			}

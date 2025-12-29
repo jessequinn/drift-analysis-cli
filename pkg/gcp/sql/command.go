@@ -85,6 +85,17 @@ type SchemaBaseline struct {
 	
 	// Forbidden objects (must not exist)
 	ForbiddenTables []string `yaml:"forbidden_tables,omitempty"`
+	
+	// Ownership validation
+	ExpectedDatabaseOwner string   `yaml:"expected_database_owner,omitempty"`    // e.g., "cloudsqlsuperuser"
+	ExpectedTableOwner    string   `yaml:"expected_table_owner,omitempty"`       // Default owner for all tables
+	ExpectedViewOwner     string   `yaml:"expected_view_owner,omitempty"`        // Default owner for all views
+	AllowedOwners         []string `yaml:"allowed_owners,omitempty"`             // List of allowed owners
+	ForbiddenOwners       []string `yaml:"forbidden_owners,omitempty"`           // Owners that should not exist
+	
+	// Specific ownership exceptions
+	TableOwnerExceptions map[string]string `yaml:"table_owner_exceptions,omitempty"` // table -> expected owner
+	ViewOwnerExceptions  map[string]string `yaml:"view_owner_exceptions,omitempty"`  // view -> expected owner
 }
 
 // SSHTunnelConfig defines SSH tunnel configuration for accessing private databases
