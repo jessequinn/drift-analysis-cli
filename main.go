@@ -54,7 +54,10 @@ func runSQLCommand(args []string) {
 	filterRole := fs.String("filter-role", "", "Filter by database-role label")
 	generateConfig := fs.Bool("generate-config", false, "Generate baseline config from current state")
 
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 
@@ -102,7 +105,10 @@ func runGKECommand(args []string) {
 	filterRole := fs.String("filter-role", "", "Filter by cluster-role label")
 	generateConfig := fs.Bool("generate-config", false, "Generate baseline config from current state")
 
-	fs.Parse(args)
+	if err := fs.Parse(args); err != nil {
+		fmt.Fprintf(os.Stderr, "Error parsing flags: %v\n", err)
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 

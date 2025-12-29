@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -74,7 +75,11 @@ func (c *Command) Execute(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create analyzer: %w", err)
 	}
-	defer analyzer.Close()
+	defer func() {
+		if err := analyzer.Close(); err != nil {
+			log.Printf("Warning: failed to close analyzer: %v", err)
+		}
+	}()
 
 	// Discover all PostgreSQL instances
 	instances, err := analyzer.DiscoverInstances(ctx, projectList)
@@ -111,20 +116,6 @@ func (c *Command) Execute(ctx context.Context) error {
 	return outputReport(report, c.Format, c.OutputFile)
 }
 
-// loadConfig loads configuration from a YAML file
-func loadConfig(path string) (*Config, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-
-	var config Config
-	if err := yaml.Unmarshal(data, &config); err != nil {
-		return nil, err
-	}
-
-	return &config, nil
-}
 
 // generateBaselineConfig generates a baseline configuration from discovered instances
 func generateBaselineConfig(instances []*DatabaseInstance, outputPath string) error {
