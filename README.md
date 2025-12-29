@@ -1,5 +1,9 @@
 # GCP Drift Analysis CLI
 
+[![CI](https://github.com/jessequinn/drift-analysis-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jessequinn/drift-analysis-cli/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/jessequinn/drift-analysis-cli)](https://goreportcard.com/report/github.com/jessequinn/drift-analysis-cli)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A comprehensive CLI tool for detecting configuration drift across Google Cloud Platform resources including Cloud SQL PostgreSQL instances and GKE clusters.
 
 ## Features
@@ -353,6 +357,72 @@ if [ "$DRIFTED" -gt 0 ]; then
   echo "SQL drift detected! Review required."
   exit 1
 fi
+```
+
+## CI/CD
+
+This project includes comprehensive GitHub Actions workflows:
+
+### Continuous Integration (CI)
+Runs on every push and pull request to `main` and `develop` branches:
+
+**Lint Job:**
+- golangci-lint with 20+ linters enabled
+- Code style and quality checks
+
+**Security Job:**
+- `govulncheck` - Scan for known vulnerabilities
+- `gosec` - Security analysis for Go code
+
+**Test Job:**
+- Tests run on Go 1.23 and 1.24
+- Race condition detection
+- Code coverage reporting to Codecov
+
+**Build Job:**
+- Multi-platform builds (Linux, macOS, Windows)
+- Multi-architecture (amd64, arm64)
+- Build artifacts uploaded for 7 days
+
+**Validate Job:**
+- Code formatting check (`gofmt`)
+- `go vet` static analysis
+- Ineffectual assignment detection
+- Error checking with `errcheck`
+- Additional static analysis with `staticcheck`
+
+### Release Workflow
+Automatically creates releases when pushing version tags:
+
+```bash
+# Create and push a new release
+git tag -a v1.0.0 -m "Release v1.0.0"
+git push origin v1.0.0
+```
+
+This will:
+- Build binaries for all platforms
+- Generate SHA256 checksums
+- Create a GitHub release with assets
+- Auto-generate release notes
+
+### Local Development
+
+```bash
+# Format code
+go fmt ./...
+
+# Run linter locally
+golangci-lint run
+
+# Run vulnerability check
+govulncheck ./...
+
+# Run all tests
+go test -v -race -coverprofile=coverage.txt ./...
+
+# Build for current platform
+go build -v -o drift-analysis-cli
 ```
 
 ## Development
