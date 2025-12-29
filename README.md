@@ -30,35 +30,29 @@ go build -o drift-analysis-cli
 
 ```bash
 # Analyze with baseline config
-./drift-analysis-cli sql -config config.yaml
-
-# Analyze specific projects
-./drift-analysis-cli sql -projects "project-1,project-2"
+./drift-analysis-cli sql --config config.yaml
 
 # Filter by role
-./drift-analysis-cli sql -projects "project-1" -filter-role application
+./drift-analysis-cli sql --config config.yaml --filter-role application
 
 # Generate baseline
-./drift-analysis-cli sql -projects "project-1" -generate-config -output baseline.yaml
+./drift-analysis-cli sql --config config.yaml --generate-config --output baseline.yaml
 
 # Export as JSON
-./drift-analysis-cli sql -config config.yaml -format json -output report.json
+./drift-analysis-cli sql --config config.yaml --format json --output report.json
 ```
 
 ### GKE Analysis
 
 ```bash
 # Analyze with baseline config
-./drift-analysis-cli gke -config config.yaml
-
-# Analyze specific projects
-./drift-analysis-cli gke -projects "project-1,project-2"
+./drift-analysis-cli gke --config config.yaml
 
 # Filter by cluster role
-./drift-analysis-cli gke -projects "project-1" -filter-role production
+./drift-analysis-cli gke --config config.yaml --filter-role production
 
 # Generate baseline
-./drift-analysis-cli gke -projects "project-1" -generate-config -output baseline.yaml
+./drift-analysis-cli gke --config config.yaml --generate-config --output baseline.yaml
 ```
 
 ## Configuration File Format
