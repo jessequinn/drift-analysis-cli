@@ -14,6 +14,8 @@
 # Include directories
 !pkg/
 !pkg/**
+!cmd/
+!cmd/**
 !.github/
 !.github/**
 
@@ -23,3 +25,34 @@ config.yaml
 config.yaml.old
 output.txt
 *.log
+
+# Cache directories
+.drift-cache/
+*.out
+
+# Test outputs and exports
+schema-exports/
+schema-ddl/
+ddl/
+reports/
+json/
+yaml/
+documentation/
+test-ddl/
+prod-ddl/
+before-migration/
+after-migration/
+compliance-check/
+exports/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+

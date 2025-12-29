@@ -19,15 +19,15 @@ drift-analysis-cli <command> [flags]
 - Label-based filtering (`database-role`)
 - Database enumeration
 - Comprehensive drift detection:
-  - Database versions
-  - Machine tiers & disk config
-  - Database flags (all PostgreSQL flags)
-  - Backup & retention settings (backup_retention_days, transaction_log_retention_days)
-  - IP configuration (ipv4_enabled, require_ssl)
-  - Authorized networks (detects Required & Extra)
-  - Required databases (detects missing & extra)
-  - Insights config (query_insights_enabled, query_plans_per_minute, query_string_length)
-  - Pricing plan, replication type
+ - Database versions
+ - Machine tiers & disk config
+ - Database flags (all PostgreSQL flags)
+ - Backup & retention settings (backup_retention_days, transaction_log_retention_days)
+ - IP configuration (ipv4_enabled, require_ssl)
+ - Authorized networks (detects Required & Extra)
+ - Required databases (detects missing & extra)
+ - Insights config (query_insights_enabled, query_plans_per_minute, query_string_length)
+ - Pricing plan, replication type
 - Output formats: text, json, yaml
 - Severity levels: CRITICAL, HIGH, MEDIUM, LOW
 
@@ -112,70 +112,70 @@ drift-analysis-cli gke -config config.yaml -format yaml -output report.yaml
 ### Unified Multi-Resource Config (`config.yaml`)
 ```yaml
 projects:
-  - my-project-1
-  - my-project-2
+ - my-project-1
+ - my-project-2
 
 # Cloud SQL baselines
 sql_baselines:
-  - name: "application"
-    filter_labels:
-      database-role: "application"
-    config:
-      database_version: POSTGRES_15
-      tier: db-custom-4-16384
-      required_databases:
-        - app_db
-        - postgres
-      database_flags:
-        cloudsql.iam_authentication: "on"
-      settings:
-        availability_type: REGIONAL
-        backup_enabled: true
-        
-  - name: "vault"
-    filter_labels:
-      database-role: "vault"
-    config:
-      # vault-specific settings
+ - name: "application"
+ filter_labels:
+ database-role: "application"
+ config:
+ database_version: POSTGRES_15
+ tier: db-custom-4-16384
+ required_databases:
+ - app_db
+ - postgres
+ database_flags:
+ cloudsql.iam_authentication: "on"
+ settings:
+ availability_type: REGIONAL
+ backup_enabled: true
+
+ - name: "vault"
+ filter_labels:
+ database-role: "vault"
+ config:
+ # vault-specific settings
 
 # GKE baselines
 gke_baselines:
-  - name: "production"
-    filter_labels:
-      cluster-role: "production"
-    cluster_config:
-      master_version: "1.33"
-      release_channel: REGULAR
-      private_cluster: true
-      shielded_nodes: true
-      workload_identity: true
-      logging_config:
-        enable_system_logs: true
-    nodepool_config:
-      machine_type: n2-standard-4
-      disk_size_gb: 100
-      auto_upgrade: true
-      auto_repair: true
+ - name: "production"
+ filter_labels:
+ cluster-role: "production"
+ cluster_config:
+ master_version: "1.33"
+ release_channel: REGULAR
+ private_cluster: true
+ shielded_nodes: true
+ workload_identity: true
+ logging_config:
+ enable_system_logs: true
+ nodepool_config:
+ machine_type: n2-standard-4
+ disk_size_gb: 100
+ auto_upgrade: true
+ auto_repair: true
 ```
 
 ## Directory Structure
 
 ```
 drift-analysis-cli/
-├── main.go                      # CLI entry point with command routing
+├── main.go # CLI entry point with command routing
 ├── pkg/
-│   ├── csql/                   # Cloud SQL package
-│   │   ├── analyzer.go         # Discovery & drift analysis
-│   │   ├── command.go          # Command handler
-│   │   └── report.go           # Report formatting
-│   └── gke/                    # GKE package
-│       ├── analyzer.go         # Discovery & drift analysis
-│       ├── command.go          # Command handler
-│       └── report.go           # Report formatting
-├── config.yaml                 # Your config (gitignored)
-├── config.yaml.example         # Example config
-├── DATABASE-ROLE-GUIDE.md      # SQL labeling guide
-└── README.md                   # Main documentation
+│ ├── csql/ # Cloud SQL package
+│ │ ├── analyzer.go # Discovery & drift analysis
+│ │ ├── command.go # Command handler
+│ │ └── report.go # Report formatting
+│ └── gke/ # GKE package
+│ ├── analyzer.go # Discovery & drift analysis
+│ ├── command.go # Command handler
+│ └── report.go # Report formatting
+├── config.yaml # Your config (gitignored)
+├── config.yaml.example # Example config
+├── DATABASE-ROLE-GUIDE.md # SQL labeling guide
+└── README.md # Main documentation
 ```
 
 ## Severity Classification

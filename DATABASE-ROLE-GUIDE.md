@@ -17,8 +17,8 @@ Labels enable you to:
 Apply labels using gcloud:
 ```bash
 gcloud sql instances patch INSTANCE_NAME \
-  --update-labels database-role=ROLE_VALUE \
-  --project PROJECT_ID
+ --update-labels database-role=ROLE_VALUE \
+ --project PROJECT_ID
 ```
 
 ### Recommended Roles
@@ -36,7 +36,7 @@ Primary databases for web applications or services.
 **Example:**
 ```bash
 gcloud sql instances patch main-app-db \
-  --update-labels database-role=application
+ --update-labels database-role=application
 ```
 
 #### 2. Microservices Databases (`microservices`)
@@ -52,7 +52,7 @@ Databases for microservice architectures.
 **Example:**
 ```bash
 gcloud sql instances patch user-service-db \
-  --update-labels database-role=microservices
+ --update-labels database-role=microservices
 ```
 
 #### 3. Vault Databases (`vault`)
@@ -68,7 +68,7 @@ HashiCorp Vault or secrets management databases.
 **Example:**
 ```bash
 gcloud sql instances patch vault-backend \
-  --update-labels database-role=vault
+ --update-labels database-role=vault
 ```
 
 #### 4. Monitoring/Observability (`monitoring`)
@@ -83,7 +83,7 @@ Databases for monitoring tools, metrics, or test data.
 **Example:**
 ```bash
 gcloud sql instances patch cloudprober-db \
-  --update-labels database-role=monitoring
+ --update-labels database-role=monitoring
 ```
 
 ### Viewing Current Labels
@@ -91,11 +91,11 @@ gcloud sql instances patch cloudprober-db \
 ```bash
 # View labels for a specific instance
 gcloud sql instances describe INSTANCE_NAME \
-  --format="get(settings.userLabels)"
+ --format="get(settings.userLabels)"
 
 # List all instances with their labels
 gcloud sql instances list \
-  --format="table(name,settings.userLabels)"
+ --format="table(name,settings.userLabels)"
 ```
 
 ## GKE Cluster Labels
@@ -105,9 +105,9 @@ gcloud sql instances list \
 Apply labels using gcloud:
 ```bash
 gcloud container clusters update CLUSTER_NAME \
-  --update-labels cluster-role=ROLE_VALUE \
-  --location LOCATION \
-  --project PROJECT_ID
+ --update-labels cluster-role=ROLE_VALUE \
+ --location LOCATION \
+ --project PROJECT_ID
 ```
 
 ### Recommended Roles
@@ -125,8 +125,8 @@ Production workload clusters.
 **Example:**
 ```bash
 gcloud container clusters update prod-us-central1 \
-  --update-labels cluster-role=production \
-  --location us-central1
+ --update-labels cluster-role=production \
+ --location us-central1
 ```
 
 #### 2. Staging Clusters (`staging`)
@@ -141,8 +141,8 @@ Pre-production testing environments.
 **Example:**
 ```bash
 gcloud container clusters update staging-cluster \
-  --update-labels cluster-role=staging \
-  --location us-west1
+ --update-labels cluster-role=staging \
+ --location us-west1
 ```
 
 #### 3. Development Clusters (`development`)
@@ -157,8 +157,8 @@ Development and testing clusters.
 **Example:**
 ```bash
 gcloud container clusters update dev-cluster \
-  --update-labels cluster-role=development \
-  --location us-east1
+ --update-labels cluster-role=development \
+ --location us-east1
 ```
 
 ### Viewing Current Labels
@@ -166,12 +166,12 @@ gcloud container clusters update dev-cluster \
 ```bash
 # View labels for a specific cluster
 gcloud container clusters describe CLUSTER_NAME \
-  --location LOCATION \
-  --format="get(resourceLabels)"
+ --location LOCATION \
+ --format="get(resourceLabels)"
 
 # List all clusters with their labels
 gcloud container clusters list \
-  --format="table(name,location,resourceLabels)"
+ --format="table(name,location,resourceLabels)"
 ```
 
 ## Configuration Example
@@ -180,56 +180,56 @@ gcloud container clusters list \
 
 ```yaml
 projects:
-  - my-project-1
-  - my-project-2
+ - my-project-1
+ - my-project-2
 
 # Cloud SQL baselines by role
 sql_baselines:
-  - name: "application"
-    filter_labels:
-      database-role: "application"
-    config:
-      database_version: POSTGRES_15
-      tier: db-custom-4-16384
-      settings:
-        availability_type: REGIONAL
-        backup_retention_days: 7
+ - name: "application"
+ filter_labels:
+ database-role: "application"
+ config:
+ database_version: POSTGRES_15
+ tier: db-custom-4-16384
+ settings:
+ availability_type: REGIONAL
+ backup_retention_days: 7
 
-  - name: "vault"
-    filter_labels:
-      database-role: "vault"
-    config:
-      database_version: POSTGRES_15
-      settings:
-        availability_type: REGIONAL
-        backup_retention_days: 30
-        ip_configuration:
-          ipv4_enabled: false
+ - name: "vault"
+ filter_labels:
+ database-role: "vault"
+ config:
+ database_version: POSTGRES_15
+ settings:
+ availability_type: REGIONAL
+ backup_retention_days: 30
+ ip_configuration:
+ ipv4_enabled: false
 
-  - name: "monitoring"
-    filter_labels:
-      database-role: "monitoring"
-    config:
-      settings:
-        backup_enabled: false
+ - name: "monitoring"
+ filter_labels:
+ database-role: "monitoring"
+ config:
+ settings:
+ backup_enabled: false
 
 # GKE baselines by role
 gke_baselines:
-  - name: "production"
-    filter_labels:
-      cluster-role: "production"
-    cluster_config:
-      release_channel: REGULAR
-      shielded_nodes: true
-      workload_identity: true
-      security_posture: ENTERPRISE
+ - name: "production"
+ filter_labels:
+ cluster-role: "production"
+ cluster_config:
+ release_channel: REGULAR
+ shielded_nodes: true
+ workload_identity: true
+ security_posture: ENTERPRISE
 
-  - name: "development"
-    filter_labels:
-      cluster-role: "development"
-    cluster_config:
-      release_channel: RAPID
-      shielded_nodes: true
+ - name: "development"
+ filter_labels:
+ cluster-role: "development"
+ cluster_config:
+ release_channel: RAPID
+ shielded_nodes: true
 ```
 
 ## Filtering by Role
@@ -267,17 +267,17 @@ You can define your own roles based on your organization's needs:
 
 ```yaml
 sql_baselines:
-  - name: "analytics"
-    filter_labels:
-      database-role: "analytics"
-    config:
-      # Analytics-specific configuration
-      
-  - name: "reporting"
-    filter_labels:
-      database-role: "reporting"
-    config:
-      # Reporting-specific configuration
+ - name: "analytics"
+ filter_labels:
+ database-role: "analytics"
+ config:
+ # Analytics-specific configuration
+
+ - name: "reporting"
+ filter_labels:
+ database-role: "reporting"
+ config:
+ # Reporting-specific configuration
 ```
 
 ## Troubleshooting
@@ -306,5 +306,5 @@ Consider combining with these standard GCP labels:
 Example:
 ```bash
 gcloud sql instances patch my-db \
-  --update-labels database-role=application,environment=production,team=backend
+ --update-labels database-role=application,environment=production,team=backend
 ```

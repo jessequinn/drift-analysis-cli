@@ -129,7 +129,7 @@ func buildOverviewTab(data ReportData) string {
 		sb.WriteString(lipgloss.NewStyle().
 			Foreground(lipgloss.Color("208")).
 			Bold(true).
-			Render(fmt.Sprintf("  ⚠ HIGH:     %d", high)) + "\n")
+			Render(fmt.Sprintf("  [WARNING] HIGH:     %d", high)) + "\n")
 	}
 	if medium > 0 {
 		sb.WriteString(lipgloss.NewStyle().
@@ -146,7 +146,7 @@ func buildOverviewTab(data ReportData) string {
 		sb.WriteString(lipgloss.NewStyle().
 			Foreground(lipgloss.Color("46")).
 			Bold(true).
-			Render("  ✓ No drifts detected - all resources comply with baseline") + "\n")
+			Render("  [OK] No drifts detected - all resources comply with baseline") + "\n")
 	}
 
 	sb.WriteString("\n")
@@ -166,7 +166,7 @@ func buildOverviewTab(data ReportData) string {
 
 	sb.WriteString(lipgloss.NewStyle().
 		Foreground(lipgloss.Color("46")).
-		Render(fmt.Sprintf("  ✓ Compliant: %d", compliantCount)) + "\n")
+		Render(fmt.Sprintf("  [OK] Compliant: %d", compliantCount)) + "\n")
 
 	sb.WriteString(lipgloss.NewStyle().
 		Foreground(lipgloss.Color("196")).
@@ -186,7 +186,7 @@ func buildSeverityTab(data ReportData, severity string) string {
 			Foreground(lipgloss.Color("46")).
 			Bold(true).
 			MarginTop(2)
-		sb.WriteString(okStyle.Render(fmt.Sprintf("✓ No %s severity drifts detected", strings.ToUpper(severity))) + "\n")
+		sb.WriteString(okStyle.Render(fmt.Sprintf("[OK] No %s severity drifts detected", strings.ToUpper(severity))) + "\n")
 		return sb.String()
 	}
 
@@ -252,7 +252,7 @@ func formatDriftItem(item DriftItem, filterSeverity string) string {
 		okStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("46")).
 			Bold(true)
-		sb.WriteString(okStyle.Render("  ✓ No drift detected") + "\n")
+		sb.WriteString(okStyle.Render("  [OK] No drift detected") + "\n")
 	} else {
 		filteredDrifts := item.Drifts
 		if filterSeverity != "" {
@@ -346,7 +346,7 @@ func getIconForSeverity(severity string) string {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("208")).
 			Bold(true).
-			Render("⚠")
+			Render("[WARNING]")
 	case "medium":
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("220")).

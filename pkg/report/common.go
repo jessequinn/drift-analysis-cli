@@ -27,7 +27,7 @@ func GetIconForSeverity(severity string) string {
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("208")).
 			Bold(true).
-			Render("⚠")
+			Render("[WARNING]")
 	case "medium":
 		return lipgloss.NewStyle().
 			Foreground(lipgloss.Color("220")).
@@ -78,7 +78,7 @@ func FormatDriftSummary(critical, high, medium, low int) string {
 			sb.WriteString(lipgloss.NewStyle().
 				Foreground(lipgloss.Color("208")).
 				Bold(true).
-				Render(fmt.Sprintf("  ⚠ HIGH:     %d", high)) + "\n")
+				Render(fmt.Sprintf("  [WARNING] HIGH:     %d", high)) + "\n")
 		}
 		if medium > 0 {
 			sb.WriteString(lipgloss.NewStyle().
@@ -102,7 +102,7 @@ func FormatDrifts(drifts []Drift) string {
 		okStyle := lipgloss.NewStyle().
 			Foreground(lipgloss.Color("46")).
 			Bold(true)
-		sb.WriteString(okStyle.Render("✓ No drift detected") + "\n")
+		sb.WriteString(okStyle.Render("[OK] No drift detected") + "\n")
 	} else {
 		headerStyle := lipgloss.NewStyle().
 			Bold(true).

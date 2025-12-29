@@ -71,18 +71,18 @@ drift-analysis-cli gcp gke -c config.yaml -o tui
 ## Example Workflow
 
 1. Run analysis with TUI mode:
-   ```bash
-   drift-analysis-cli gcp sql -c config.yaml -o tui
-   ```
+ ```bash
+ drift-analysis-cli gcp sql -c config.yaml -o tui
+ ```
 
 2. Start in Overview tab to see:
-   - Total resources analyzed
-   - Compliance rate percentage
-   - Drift counts by severity
+ - Total resources analyzed
+ - Compliance rate percentage
+ - Drift counts by severity
 
 3. Press `tab` to switch to Critical tab
-   - Review all critical issues first
-   - Note which resources need immediate attention
+ - Review all critical issues first
+ - Note which resources need immediate attention
 
 4. Use arrow keys or vim-style navigation (j/k) to scroll through results
 

@@ -12,7 +12,7 @@ func TestGetIconForSeverity(t *testing.T) {
 		want     string
 	}{
 		{"critical", "critical", "✗"},
-		{"high", "high", "⚠"},
+		{"high", "high", "[WARNING]"},
 		{"medium", "medium", "●"},
 		{"low", "low", "○"},
 		{"unknown", "unknown", " "},

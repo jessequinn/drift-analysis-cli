@@ -25,19 +25,101 @@ type Command struct {
 
 // Config represents the YAML configuration file structure for SQL
 type Config struct {
-	Projects  []string      `yaml:"projects"`
-	Baselines []SQLBaseline `yaml:"baselines,omitempty"`
+	Projects            []string               `yaml:"projects"`
+	Baselines           []SQLBaseline          `yaml:"baselines,omitempty"`
+	DatabaseConnections []DatabaseConnection   `yaml:"database_connections,omitempty"`
 
 	// Legacy single baseline support
 	Baseline     *DatabaseConfig   `yaml:"baseline,omitempty"`
 	FilterLabels map[string]string `yaml:"filter_labels,omitempty"`
 }
 
-// SQLBaseline represents a SQL configuration baseline with optional filters
+// SQLBaseline represents a Cloud SQL INSTANCE configuration baseline
+// This is for infrastructure drift: instance settings, flags, disk, etc.
 type SQLBaseline struct {
 	Name         string            `yaml:"name,omitempty"`
 	FilterLabels map[string]string `yaml:"filter_labels,omitempty"`
 	Config       *DatabaseConfig   `yaml:"config"`
+}
+
+// DatabaseConnection represents connection info for database schema inspection
+// This is separate from infrastructure - focuses on inspecting database content:
+// tables, views, functions, procedures, owners, roles, etc.
+type DatabaseConnection struct {
+	Name                   string `yaml:"name"`                             // Friendly name
+	InstanceConnectionName string `yaml:"instance_connection_name"`         // project:region:instance
+	Database               string `yaml:"database"`                         // Database name
+	Username               string `yaml:"username"`                         // DB user
+	Password               string `yaml:"password,omitempty"`               // Password (or use IAM)
+	UsePrivateIP           bool   `yaml:"use_private_ip,omitempty"`         // Private IP connection
+	
+	// Optional: construct connection name from parts
+	Project      string `yaml:"project,omitempty"`
+	Region       string `yaml:"region,omitempty"`
+	InstanceName string `yaml:"instance_name,omitempty"`
+}
+
+// GetConnectionName returns the full instance connection name
+func (dc *DatabaseConnection) GetConnectionName() string {
+	if dc.InstanceConnectionName != "" {
+		return dc.InstanceConnectionName
+	}
+	
+	if dc.Project != "" && dc.Region != "" && dc.InstanceName != "" {
+		return fmt.Sprintf("%s:%s:%s", dc.Project, dc.Region, dc.InstanceName)
+	}
+	
+	return ""
+}
+
+// Validate checks if the database connection config is valid
+func (dc *DatabaseConnection) Validate() error {
+	if dc.Name == "" {
+		return fmt.Errorf("connection name is required")
+	}
+	
+	connName := dc.GetConnectionName()
+	if connName == "" {
+		return fmt.Errorf("must provide either instance_connection_name or project+region+instance_name")
+	}
+	
+	if dc.Database == "" {
+		return fmt.Errorf("database name is required")
+	}
+	
+	if dc.Username == "" {
+		return fmt.Errorf("username is required")
+	}
+	
+	return nil
+}
+
+// ToConnectionConfig converts to ConnectionConfig for backward compatibility
+func (dc *DatabaseConnection) ToConnectionConfig() *ConnectionConfig {
+	return &ConnectionConfig{
+		InstanceConnectionName: dc.GetConnectionName(),
+		Database:               dc.Database,
+		Username:               dc.Username,
+		Password:               dc.Password,
+		UsePrivateIP:           dc.UsePrivateIP,
+		Project:                dc.Project,
+		Region:                 dc.Region,
+		InstanceName:           dc.InstanceName,
+	}
+}
+
+// ConnectionConfig holds database connection information (kept for backward compatibility)
+type ConnectionConfig struct {
+	InstanceConnectionName string `yaml:"instance_connection_name,omitempty"` // format: project:region:instance
+	Database               string `yaml:"database,omitempty"`
+	Username               string `yaml:"username,omitempty"`
+	Password               string `yaml:"password,omitempty"`
+	UsePrivateIP           bool   `yaml:"use_private_ip,omitempty"`
+	Project                string `yaml:"project,omitempty"`
+	
+	// For instances without connection name format
+	InstanceName           string `yaml:"instance_name,omitempty"`
+	Region                 string `yaml:"region,omitempty"`
 }
 
 // Compile-time interface implementation check
@@ -260,4 +342,40 @@ func matchesLabels(inst *DatabaseInstance, labels map[string]string) bool {
 		}
 	}
 	return true
+}
+
+// GetConnectionName returns the full instance connection name
+// Either from the explicit field or constructed from project:region:instance
+func (c *ConnectionConfig) GetConnectionName() string {
+	if c.InstanceConnectionName != "" {
+		return c.InstanceConnectionName
+	}
+	
+	if c.Project != "" && c.Region != "" && c.InstanceName != "" {
+		return fmt.Sprintf("%s:%s:%s", c.Project, c.Region, c.InstanceName)
+	}
+	
+	return ""
+}
+
+// Validate checks if the connection config has required fields
+func (c *ConnectionConfig) Validate() error {
+	if c == nil {
+		return fmt.Errorf("connection config is nil")
+	}
+	
+	connName := c.GetConnectionName()
+	if connName == "" {
+		return fmt.Errorf("must provide either instance_connection_name or project+region+instance_name")
+	}
+	
+	if c.Database == "" {
+		return fmt.Errorf("database name is required")
+	}
+	
+	if c.Username == "" {
+		return fmt.Errorf("username is required")
+	}
+	
+	return nil
 }

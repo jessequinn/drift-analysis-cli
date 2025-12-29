@@ -6,7 +6,12 @@ projects:
   - my-staging-project
   - my-qa-project
 
-# Cloud SQL baselines
+# ============================================================================
+# Cloud SQL INSTANCE baselines (infrastructure configuration)
+# ============================================================================
+# These define expected Cloud SQL INSTANCE settings: version, tier, disk,
+# database flags, backup settings, IP configuration, etc.
+# This is for INFRASTRUCTURE drift detection, not database schema inspection.
 sql_baselines:
   # Application databases
   - name: "application"
@@ -65,7 +70,55 @@ sql_baselines:
         backup_retention_days: 7
         point_in_time_recovery: true
 
+# ============================================================================
+# DATABASE CONNECTION configurations (schema inspection)
+# ============================================================================
+# These are SEPARATE from infrastructure baselines and define how to connect
+# to actual databases to inspect schemas: tables, views, functions, roles,
+# procedures, sequences, extensions, etc.
+#
+# Inspected schemas are cached locally in: .drift-cache/database-schemas/
+# This enables fast schema comparison without re-connecting to databases.
+#
+# Use this for tracking database schema changes over time.
+database_connections:
+  # Production application database
+  - name: "prod-app-db"
+    instance_connection_name: "my-production-project:us-central1:app-instance"
+    database: "app_db"
+    username: "inspector"         # Read-only user recommended
+    password: ""                  # Leave empty for IAM auth
+    use_private_ip: true          # Use private IP (requires VPC connectivity)
+    project: "my-production-project"
+  
+  # Staging database
+  - name: "staging-app-db"
+    instance_connection_name: "my-staging-project:us-central1:staging-instance"
+    database: "app_db"
+    username: "postgres"
+    password: "${DB_PASSWORD}"    # Can use environment variables
+    use_private_ip: true
+  
+  # Microservices database (alternative format)
+  - name: "microservices-db"
+    project: "my-production-project"
+    region: "us-central1"
+    instance_name: "microservices-instance"  # Will construct connection name
+    database: "service_a"
+    username: "readonly"
+    use_private_ip: true
+  
+  # Public IP example (no proxy needed)
+  - name: "dev-public-db"
+    instance_connection_name: "my-qa-project:us-east1:dev-instance"
+    database: "postgres"
+    username: "postgres"
+    password: "dev-password"
+    use_private_ip: false         # Public IP, no proxy needed
+
+# ============================================================================
 # GKE baselines
+# ============================================================================
 gke_baselines:
   # Production GKE clusters
   - name: "production"
@@ -105,3 +158,55 @@ gke_baselines:
       image_type: COS_CONTAINERD
       auto_upgrade: true
       auto_repair: true
+
+# ============================================================================
+# Usage Examples
+# ============================================================================
+#
+# 1. Check Cloud SQL infrastructure drift:
+#    ./drift-analysis-cli sql -config config.yaml
+#    Output: Shows which instances don't match baseline configuration
+#
+# 2. Inspect database schema (first time - creates cache):
+#    ./drift-analysis-cli sql inspect -connection prod-app-db
+#    Creates: .drift-cache/database-schemas/prod-app-db.json
+#
+# 3. Compare current schema with cached baseline:
+#    ./drift-analysis-cli sql inspect -connection prod-app-db --compare
+#    Output: Shows tables/views/functions added, deleted, or modified
+#
+# 4. List all cached schemas:
+#    ./drift-analysis-cli sql cache list
+#
+# 5. Export cached schema to YAML:
+#    ./drift-analysis-cli sql cache export -connection prod-app-db -output schema.yaml
+#
+# 6. Clear all cached schemas:
+#    ./drift-analysis-cli sql cache clear
+#
+# ============================================================================
+# Notes
+# ============================================================================
+#
+# For private IP connections:
+# - Your machine must have VPC connectivity (VPN, Cloud VPN, or same VPC)
+# - Cloud SQL Proxy is automatically managed (no manual setup needed)
+# - Requires: gcloud auth application-default login
+# - Requires: cloudsql.instances.connect IAM permission
+#
+# For public IP connections:
+# - Set use_private_ip: false
+# - Ensure authorized networks are configured on the instance
+#
+# Security recommendations:
+# - Use read-only database users for schema inspection
+# - Use IAM authentication (leave password empty)
+# - Store sensitive passwords in environment variables
+# - Consider using Secret Manager for production
+#
+# Cache management:
+# - Cached schemas stored in: .drift-cache/database-schemas/
+# - Add .drift-cache/ to .gitignore
+# - Cache files are JSON format for fast read/write
+# - Consider committing baseline schemas to git for team sharing
+

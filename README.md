@@ -61,81 +61,81 @@ Create a unified `config.yaml` file for both SQL and GKE:
 
 ```yaml
 projects:
-  - my-project-1
-  - my-project-2
+ - my-project-1
+ - my-project-2
 
 # Cloud SQL baselines
 sql_baselines:
-  - name: "application"
-    filter_labels:
-      database-role: "application"
-    config:
-      database_version: POSTGRES_15
-      tier: db-custom-4-16384
-      disk_size_gb: 100
-      disk_type: PD_SSD
-      
-      required_databases:
-        - app_db
-        - postgres
-      
-      database_flags:
-        cloudsql.iam_authentication: "on"
-        max_connections: "200"
-        
-      settings:
-        availability_type: REGIONAL
-        backup_enabled: true
-        backup_retention_days: 7
-        point_in_time_recovery: true
-        transaction_log_retention_days: 7
-        
-        ip_configuration:
-          ipv4_enabled: false
-          require_ssl: true
-          authorized_networks:
-            - "10.0.0.0/24"
-        
-        insights_config:
-          query_insights_enabled: true
+ - name: "application"
+ filter_labels:
+ database-role: "application"
+ config:
+ database_version: POSTGRES_15
+ tier: db-custom-4-16384
+ disk_size_gb: 100
+ disk_type: PD_SSD
+
+ required_databases:
+ - app_db
+ - postgres
+
+ database_flags:
+ cloudsql.iam_authentication: "on"
+ max_connections: "200"
+
+ settings:
+ availability_type: REGIONAL
+ backup_enabled: true
+ backup_retention_days: 7
+ point_in_time_recovery: true
+ transaction_log_retention_days: 7
+
+ ip_configuration:
+ ipv4_enabled: false
+ require_ssl: true
+ authorized_networks:
+ - "10.0.0.0/24"
+
+ insights_config:
+ query_insights_enabled: true
 
 # GKE baselines
 gke_baselines:
-  - name: "production"
-    filter_labels:
-      cluster-role: "production"
-    cluster_config:
-      master_version: "1.33"
-      release_channel: REGULAR
-      private_cluster: true
-      master_global_access: true
-      datapath_provider: ADVANCED_DATAPATH
-      
-      master_authorized_networks:
-        - "10.0.0.0/24"
-      
-      ip_allocation_policy:
-        stack_type: IPV4_IPV6
-      
-      shielded_nodes: true
-      security_posture: BASIC
-      workload_identity: true
-      
-      logging_config:
-        enable_system_logs: true
-        enable_workload_logs: true
-      
-      monitoring_config:
-        enable_system_metrics: true
-        enable_apiserver_metrics: true
-    
-    nodepool_config:
-      machine_type: n2-standard-4
-      disk_size_gb: 100
-      disk_type: pd-ssd
-      image_type: COS_CONTAINERD
-      auto_upgrade: true
-      auto_repair: true
+ - name: "production"
+ filter_labels:
+ cluster-role: "production"
+ cluster_config:
+ master_version: "1.33"
+ release_channel: REGULAR
+ private_cluster: true
+ master_global_access: true
+ datapath_provider: ADVANCED_DATAPATH
+
+ master_authorized_networks:
+ - "10.0.0.0/24"
+
+ ip_allocation_policy:
+ stack_type: IPV4_IPV6
+
+ shielded_nodes: true
+ security_posture: BASIC
+ workload_identity: true
+
+ logging_config:
+ enable_system_logs: true
+ enable_workload_logs: true
+
+ monitoring_config:
+ enable_system_metrics: true
+ enable_apiserver_metrics: true
+
+ nodepool_config:
+ machine_type: n2-standard-4
+ disk_size_gb: 100
+ disk_type: pd-ssd
+ image_type: COS_CONTAINERD
+ auto_upgrade: true
+ auto_repair: true
 ```
 
 ## Cloud SQL Checks
@@ -208,7 +208,7 @@ gke_baselines:
 
 ```
 ===============================================================================
-  GCP PostgreSQL Drift Analysis Report
+ GCP PostgreSQL Drift Analysis Report
 ===============================================================================
 
 Generated: 2025-12-29T13:55:00Z
@@ -217,36 +217,36 @@ Instances with Drift: 3
 Compliance Rate: 40.0%
 
 Drift Summary:
-  [!] CRITICAL: 2
-  [!] HIGH:     4
-  [*] MEDIUM:   7
-  [-] LOW:      3
+ [!] CRITICAL: 2
+ [!] HIGH: 4
+ [*] MEDIUM: 7
+ [-] LOW: 3
 
 -------------------------------------------------------------------------------
 Instance: production-db-1
-Project:  my-project-123
-Region:   us-central1
-State:    RUNNABLE
-Role:     application
+Project: my-project-123
+Region: us-central1
+State: RUNNABLE
+Role: application
 
 Detected Drifts: 3
 
-  [!] [CRITICAL] settings.ip_configuration.require_ssl
-     Expected: true
-     Actual:   false
+ [!] [CRITICAL] settings.ip_configuration.require_ssl
+ Expected: true
+ Actual: false
 
-  [!] [HIGH] settings.availability_type
-     Expected: REGIONAL
-     Actual:   ZONAL
+ [!] [HIGH] settings.availability_type
+ Expected: REGIONAL
+ Actual: ZONAL
 
-  [*] [MEDIUM] database_flags.max_connections
-     Expected: 200
-     Actual:   100
+ [*] [MEDIUM] database_flags.max_connections
+ Expected: 200
+ Actual: 100
 
 Recommendations:
-  - Enable SSL requirement to secure connections
-  - Consider REGIONAL availability for production workloads
-  - Review connection pool settings
+ - Enable SSL requirement to secure connections
+ - Consider REGIONAL availability for production workloads
+ - Review connection pool settings
 ```
 
 ## Authentication
@@ -280,22 +280,22 @@ Or the predefined role: `roles/container.viewer`
 
 ### SQL Command
 ```
--projects string      Comma-separated list of GCP project IDs
--config string        Path to unified YAML config file
--output string        Output file path (default: stdout)
--format string        Output format: text, json, yaml (default: text)
--filter-role string   Filter instances by database-role label
--generate-config      Generate baseline config from current state
+-projects string Comma-separated list of GCP project IDs
+-config string Path to unified YAML config file
+-output string Output file path (default: stdout)
+-format string Output format: text, json, yaml (default: text)
+-filter-role string Filter instances by database-role label
+-generate-config Generate baseline config from current state
 ```
 
 ### GKE Command
 ```
--projects string      Comma-separated list of GCP project IDs
--config string        Path to unified YAML config file
--output string        Output file path (default: stdout)
--format string        Output format: text, json, yaml (default: text)
--filter-role string   Filter clusters by cluster-role label
--generate-config      Generate baseline config from current state
+-projects string Comma-separated list of GCP project IDs
+-config string Path to unified YAML config file
+-output string Output file path (default: stdout)
+-format string Output format: text, json, yaml (default: text)
+-filter-role string Filter clusters by cluster-role label
+-generate-config Generate baseline config from current state
 ```
 
 ## Label-based Filtering
@@ -305,7 +305,7 @@ Apply labels to your Cloud SQL instances:
 
 ```bash
 gcloud sql instances patch INSTANCE_NAME \
-  --update-labels database-role=application
+ --update-labels database-role=application
 ```
 
 Recommended labels:
@@ -319,8 +319,8 @@ Apply labels to your GKE clusters:
 
 ```bash
 gcloud container clusters update CLUSTER_NAME \
-  --update-labels cluster-role=production \
-  --location LOCATION
+ --update-labels cluster-role=production \
+ --location LOCATION
 ```
 
 Recommended labels:
@@ -348,8 +348,8 @@ Recommended labels:
 ./drift-analysis-cli sql -config config.yaml -format json -output sql-drift.json
 DRIFTED=$(jq '.drifted_instances' sql-drift.json)
 if [ "$DRIFTED" -gt 0 ]; then
-  echo "SQL drift detected! Review required."
-  exit 1
+ echo "SQL drift detected! Review required."
+ exit 1
 fi
 ```
 
@@ -369,19 +369,19 @@ GOOS=windows GOARCH=amd64 go build -o drift-analysis-cli.exe
 
 ```
 drift-analysis-cli/
-├── main.go                    # CLI entry point with command routing
+├── main.go # CLI entry point with command routing
 ├── pkg/
-│   ├── csql/                 # Cloud SQL package
-│   │   ├── analyzer.go       # Discovery & drift analysis
-│   │   ├── command.go        # Command handler
-│   │   └── report.go         # Report formatting
-│   └── gke/                  # GKE package
-│       ├── analyzer.go       # Discovery & drift analysis
-│       ├── command.go        # Command handler
-│       └── report.go         # Report formatting
-├── config.yaml               # Your configuration (gitignored)
-├── config.yaml.example       # Example configuration
-└── README.md                 # This file
+│ ├── csql/ # Cloud SQL package
+│ │ ├── analyzer.go # Discovery & drift analysis
+│ │ ├── command.go # Command handler
+│ │ └── report.go # Report formatting
+│ └── gke/ # GKE package
+│ ├── analyzer.go # Discovery & drift analysis
+│ ├── command.go # Command handler
+│ └── report.go # Report formatting
+├── config.yaml # Your configuration (gitignored)
+├── config.yaml.example # Example configuration
+└── README.md # This file
 ```
 
 ## License
