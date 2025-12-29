@@ -144,6 +144,9 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 	fmt.Printf("\nInspection complete!\n")
 	fmt.Printf("  Tables: %d\n", len(currentSchema.Tables))
 	fmt.Printf("  Views: %d\n", len(currentSchema.Views))
+	fmt.Printf("  Sequences: %d\n", len(currentSchema.Sequences))
+	fmt.Printf("  Functions: %d\n", len(currentSchema.Functions))
+	fmt.Printf("  Procedures: %d\n", len(currentSchema.Procedures))
 	fmt.Printf("  Roles: %d\n", len(currentSchema.Roles))
 	fmt.Printf("  Extensions: %d\n\n", len(currentSchema.Extensions))
 
@@ -354,6 +357,9 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 		fmt.Printf("  Inspection complete!\n")
 		fmt.Printf("    Tables: %d\n", len(schema.Tables))
 		fmt.Printf("    Views: %d\n", len(schema.Views))
+		fmt.Printf("    Sequences: %d\n", len(schema.Sequences))
+		fmt.Printf("    Functions: %d\n", len(schema.Functions))
+		fmt.Printf("    Procedures: %d\n", len(schema.Procedures))
 		fmt.Printf("    Roles: %d\n", len(schema.Roles))
 		fmt.Printf("    Extensions: %d\n", len(schema.Extensions))
 

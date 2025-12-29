@@ -58,6 +58,9 @@ type DatabaseSchema struct {
 	Roles        []Role
 	Tables       []TableInfo
 	Views        []ViewInfo
+	Sequences    []SequenceInfo
+	Functions    []FunctionInfo
+	Procedures   []ProcedureInfo
 	Extensions   []Extension
 }
 
@@ -113,6 +116,39 @@ type ViewInfo struct {
 	Schema     string
 	Name       string
 	Owner      string
+	Definition string
+}
+
+// SequenceInfo contains sequence metadata
+type SequenceInfo struct {
+	Schema    string
+	Name      string
+	Owner     string
+	DataType  string
+	StartValue int64
+	MinValue  *int64
+	MaxValue  *int64
+	Increment int64
+}
+
+// FunctionInfo contains function metadata
+type FunctionInfo struct {
+	Schema     string
+	Name       string
+	Owner      string
+	Language   string
+	ReturnType string
+	Arguments  string
+	Definition string
+}
+
+// ProcedureInfo contains procedure metadata
+type ProcedureInfo struct {
+	Schema     string
+	Name       string
+	Owner      string
+	Language   string
+	Arguments  string
 	Definition string
 }
 
@@ -312,6 +348,21 @@ func (di *DatabaseInspector) InspectDatabase(ctx context.Context) (*DatabaseSche
 	// Get views
 	if err := di.getViews(ctx, db, schema); err != nil {
 		return nil, fmt.Errorf("failed to get views: %w", err)
+	}
+
+	// Get sequences
+	if err := di.getSequences(ctx, db, schema); err != nil {
+		return nil, fmt.Errorf("failed to get sequences: %w", err)
+	}
+
+	// Get functions
+	if err := di.getFunctions(ctx, db, schema); err != nil {
+		return nil, fmt.Errorf("failed to get functions: %w", err)
+	}
+
+	// Get procedures
+	if err := di.getProcedures(ctx, db, schema); err != nil {
+		return nil, fmt.Errorf("failed to get procedures: %w", err)
 	}
 
 	return schema, nil
@@ -678,6 +729,101 @@ func (di *DatabaseInspector) getViews(ctx context.Context, db *sql.DB, schema *D
 			return err
 		}
 		schema.Views = append(schema.Views, view)
+	}
+
+	return rows.Err()
+}
+
+func (di *DatabaseInspector) getSequences(ctx context.Context, db *sql.DB, schema *DatabaseSchema) error {
+	query := `
+		SELECT 
+			schemaname,
+			sequencename,
+			sequenceowner
+		FROM pg_catalog.pg_sequences
+		WHERE schemaname NOT IN ('pg_catalog', 'information_schema')
+		ORDER BY schemaname, sequencename
+	`
+
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var seq SequenceInfo
+		if err := rows.Scan(&seq.Schema, &seq.Name, &seq.Owner); err != nil {
+			return err
+		}
+		schema.Sequences = append(schema.Sequences, seq)
+	}
+
+	return rows.Err()
+}
+
+func (di *DatabaseInspector) getFunctions(ctx context.Context, db *sql.DB, schema *DatabaseSchema) error {
+	query := `
+		SELECT 
+			n.nspname as schema,
+			p.proname as name,
+			pg_catalog.pg_get_userbyid(p.proowner) as owner,
+			l.lanname as language,
+			pg_catalog.pg_get_function_result(p.oid) as return_type,
+			pg_catalog.pg_get_function_arguments(p.oid) as arguments
+		FROM pg_catalog.pg_proc p
+		LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+		LEFT JOIN pg_catalog.pg_language l ON l.oid = p.prolang
+		WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+		  AND p.prokind = 'f'  -- functions only (not procedures)
+		ORDER BY n.nspname, p.proname
+	`
+
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var fn FunctionInfo
+		if err := rows.Scan(&fn.Schema, &fn.Name, &fn.Owner, &fn.Language, &fn.ReturnType, &fn.Arguments); err != nil {
+			return err
+		}
+		schema.Functions = append(schema.Functions, fn)
+	}
+
+	return rows.Err()
+}
+
+func (di *DatabaseInspector) getProcedures(ctx context.Context, db *sql.DB, schema *DatabaseSchema) error {
+	query := `
+		SELECT 
+			n.nspname as schema,
+			p.proname as name,
+			pg_catalog.pg_get_userbyid(p.proowner) as owner,
+			l.lanname as language,
+			pg_catalog.pg_get_function_arguments(p.oid) as arguments
+		FROM pg_catalog.pg_proc p
+		LEFT JOIN pg_catalog.pg_namespace n ON n.oid = p.pronamespace
+		LEFT JOIN pg_catalog.pg_language l ON l.oid = p.prolang
+		WHERE n.nspname NOT IN ('pg_catalog', 'information_schema')
+		  AND p.prokind = 'p'  -- procedures only
+		ORDER BY n.nspname, p.proname
+	`
+
+	rows, err := db.QueryContext(ctx, query)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var proc ProcedureInfo
+		if err := rows.Scan(&proc.Schema, &proc.Name, &proc.Owner, &proc.Language, &proc.Arguments); err != nil {
+			return err
+		}
+		schema.Procedures = append(schema.Procedures, proc)
 	}
 
 	return rows.Err()

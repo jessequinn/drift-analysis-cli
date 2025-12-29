@@ -90,12 +90,18 @@ type SchemaBaseline struct {
 	ExpectedDatabaseOwner string   `yaml:"expected_database_owner,omitempty"`    // e.g., "cloudsqlsuperuser"
 	ExpectedTableOwner    string   `yaml:"expected_table_owner,omitempty"`       // Default owner for all tables
 	ExpectedViewOwner     string   `yaml:"expected_view_owner,omitempty"`        // Default owner for all views
+	ExpectedSequenceOwner string   `yaml:"expected_sequence_owner,omitempty"`    // Default owner for all sequences
+	ExpectedFunctionOwner string   `yaml:"expected_function_owner,omitempty"`    // Default owner for all functions
+	ExpectedProcedureOwner string  `yaml:"expected_procedure_owner,omitempty"`   // Default owner for all procedures
 	AllowedOwners         []string `yaml:"allowed_owners,omitempty"`             // List of allowed owners
 	ForbiddenOwners       []string `yaml:"forbidden_owners,omitempty"`           // Owners that should not exist
 	
 	// Specific ownership exceptions
-	TableOwnerExceptions map[string]string `yaml:"table_owner_exceptions,omitempty"` // table -> expected owner
-	ViewOwnerExceptions  map[string]string `yaml:"view_owner_exceptions,omitempty"`  // view -> expected owner
+	TableOwnerExceptions     map[string]string `yaml:"table_owner_exceptions,omitempty"`     // table -> expected owner
+	ViewOwnerExceptions      map[string]string `yaml:"view_owner_exceptions,omitempty"`      // view -> expected owner
+	SequenceOwnerExceptions  map[string]string `yaml:"sequence_owner_exceptions,omitempty"`  // sequence -> expected owner
+	FunctionOwnerExceptions  map[string]string `yaml:"function_owner_exceptions,omitempty"`  // function -> expected owner
+	ProcedureOwnerExceptions map[string]string `yaml:"procedure_owner_exceptions,omitempty"` // procedure -> expected owner
 }
 
 // SSHTunnelConfig defines SSH tunnel configuration for accessing private databases
