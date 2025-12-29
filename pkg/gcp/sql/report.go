@@ -1,11 +1,11 @@
-package csql
+package sql
 
 import (
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/yourusername/drift-analysis-cli/pkg/report"
+	"github.com/jessequinn/drift-analysis-cli/pkg/report"
 )
 
 // DriftReport contains the complete analysis results for all instances

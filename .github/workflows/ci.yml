@@ -11,17 +11,47 @@ permissions:
   pull-requests: read
 
 jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version: ['1.24.x']
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ matrix.go-version }}
+          cache: true
+      
+      - name: Install dependencies
+        run: go get .
+      
+      - name: Build
+        run: go build -v ./...
+      
+      - name: Test with coverage
+        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+      
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: ./coverage.txt
+          flags: unittests
+          fail_ci_if_error: false
+
   lint:
     name: Lint
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.x'
           cache: true
 
       - name: golangci-lint
@@ -29,19 +59,17 @@ jobs:
         with:
           version: latest
           args: --timeout=5m
-          go-version: '1.23'
 
   security:
     name: Security Scan
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.x'
           cache: true
 
       - name: Run govulncheck
@@ -83,13 +111,12 @@ jobs:
     name: SBOM & Vulnerability Analysis
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.x'
           cache: true
 
       - name: Build binary for SBOM
@@ -117,39 +144,6 @@ jobs:
           path: sbom.spdx.json
           retention-days: 30
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        go-version: ['1.23']
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Go
-        uses: actions/setup-go@v5
-        with:
-          go-version: ${{ matrix.go-version }}
-          cache: true
-
-      - name: Download dependencies
-        run: go mod download
-
-      - name: Verify dependencies
-        run: go mod verify
-
-      - name: Run tests
-        run: go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
-        if: matrix.go-version == '1.23'
-        with:
-          file: ./coverage.txt
-          flags: unittests
-          fail_ci_if_error: false
-
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -161,13 +155,12 @@ jobs:
           - goos: windows
             goarch: arm64
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.x'
           cache: true
 
       - name: Build binary
@@ -192,13 +185,12 @@ jobs:
     name: Validate
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Set up Go
+      - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.23'
+          go-version: '1.24.x'
           cache: true
 
       - name: Check formatting

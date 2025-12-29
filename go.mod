@@ -1,4 +1,4 @@
-module github.com/yourusername/drift-analysis-cli
+module github.com/jessequinn/drift-analysis-cli
 
 go 1.24.0
 

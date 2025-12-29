@@ -1,4 +1,4 @@
-package csql
+package sql
 
 import (
 	"testing"

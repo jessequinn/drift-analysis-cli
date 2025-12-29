@@ -7,19 +7,19 @@ import (
 	"log"
 	"os"
 
-	"github.com/yourusername/drift-analysis-cli/pkg/csql"
-	"github.com/yourusername/drift-analysis-cli/pkg/gke"
+	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/gke"
+	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/sql"
 	"gopkg.in/yaml.v3"
 )
 
 // UnifiedConfig represents the unified YAML configuration for both SQL and GKE
 type UnifiedConfig struct {
 	Projects     []string           `yaml:"projects"`
-	SQLBaselines []csql.SQLBaseline `yaml:"sql_baselines,omitempty"`
-	GKEBaselines []gke.GKEBaseline  `yaml:"gke_baselines,omitempty"`
+	SQLBaselines []sql.SQLBaseline `yaml:"sql_baselines,omitempty"`
+	GKEBaselines []gke.GKEBaseline `yaml:"gke_baselines,omitempty"`
 
 	// Legacy support
-	Baselines []csql.SQLBaseline `yaml:"baselines,omitempty"`
+	Baselines []sql.SQLBaseline `yaml:"baselines,omitempty"`
 }
 
 func main() {
@@ -60,7 +60,7 @@ func runSQLCommand(args []string) {
 
 	// Load unified config if provided
 	var projectList []string
-	var baselines []csql.SQLBaseline
+	var baselines []sql.SQLBaseline
 
 	if *config != "" {
 		unifiedConfig, err := loadUnifiedConfig(*config)
@@ -77,7 +77,7 @@ func runSQLCommand(args []string) {
 		}
 	}
 
-	cmd := &csql.Command{
+	cmd := &sql.Command{
 		Projects:       *projects,
 		ProjectList:    projectList,
 		Baselines:      baselines,
