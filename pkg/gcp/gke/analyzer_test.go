@@ -1,6 +1,7 @@
 package gke
 
 import (
+	"context"
 	"testing"
 )
 
@@ -88,6 +89,91 @@ func TestMatchesLabels(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := matchesLabels(tt.cluster, tt.labels); got != tt.want {
 				t.Errorf("matchesLabels() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestNewAnalyzer(t *testing.T) {
+	ctx := context.Background()
+
+	analyzer, err := NewAnalyzer(ctx)
+	if err != nil {
+		t.Fatalf("NewAnalyzer() error = %v", err)
+	}
+
+	if analyzer == nil {
+		t.Fatal("Expected non-nil analyzer")
+	}
+}
+
+func TestAnalyzeDrift(t *testing.T) {
+	ctx := context.Background()
+	analyzer, err := NewAnalyzer(ctx)
+	if err != nil {
+		t.Fatalf("NewAnalyzer() error = %v", err)
+	}
+	defer analyzer.Close()
+
+	clusters := []*ClusterInstance{
+		{
+			Project:  "test-project",
+			Name:     "test-cluster",
+			Location: "us-central1",
+			Status:   "RUNNING",
+			Config: &ClusterConfig{
+				MasterVersion:  "1.27.3-gke.100",
+				ReleaseChannel: "REGULAR",
+				PrivateCluster: true,
+			},
+			Labels: map[string]string{"env": "test"},
+		},
+	}
+
+	baseline := &ClusterConfig{
+		MasterVersion:  "1.27.3-gke.100",
+		ReleaseChannel: "REGULAR",
+		PrivateCluster: true,
+	}
+
+	report := analyzer.AnalyzeDrift(clusters, baseline, nil)
+	if report == nil {
+		t.Fatal("Expected non-nil report")
+	}
+
+	if len(report.Instances) != 1 {
+		t.Errorf("Expected 1 cluster in report, got %d", len(report.Instances))
+	}
+}
+
+func TestExtractMinorVersion(t *testing.T) {
+	tests := []struct {
+		name    string
+		version string
+		want    string
+	}{
+		{
+			name:    "full version string",
+			version: "1.27.3-gke.100",
+			want:    "1.27",
+		},
+		{
+			name:    "simple version",
+			version: "1.27",
+			want:    "1.27",
+		},
+		{
+			name:    "single digit",
+			version: "1",
+			want:    "1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := extractMinorVersion(tt.version)
+			if got != tt.want {
+				t.Errorf("extractMinorVersion(%q) = %q, want %q", tt.version, got, tt.want)
 			}
 		})
 	}

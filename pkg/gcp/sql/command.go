@@ -116,7 +116,6 @@ func (c *Command) Execute(ctx context.Context) error {
 	return outputReport(report, c.Format, c.OutputFile)
 }
 
-
 // generateBaselineConfig generates a baseline configuration from discovered instances
 func generateBaselineConfig(instances []*DatabaseInstance, outputPath string) error {
 	if len(instances) == 0 {
