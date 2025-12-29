@@ -62,7 +62,7 @@ func TestDriftReport_FormatText(t *testing.T) {
 				"Total Instances: 3",
 				"Instances with Drift: 1",
 				"Compliance Rate: 66.7%",
-				"Drift Summary:",
+				"Drift Summary",
 				"CRITICAL: 1",
 				"HIGH:     1",
 				"Detected Drifts: 2",
@@ -98,7 +98,7 @@ func TestInstanceDrift_FormatText(t *testing.T) {
 				Drifts:  []Drift{},
 			},
 			want: []string{
-				"Instance: test-instance",
+				"Cloud SQL Instance: test-instance",
 				"Project:  test-project",
 				"Region:   us-central1",
 				"State:    RUNNABLE",
@@ -119,7 +119,7 @@ func TestInstanceDrift_FormatText(t *testing.T) {
 				Recommendations: []string{"Resize instance to match baseline"},
 			},
 			want: []string{
-				"Instance: app-instance",
+				"Cloud SQL Instance: app-instance",
 				"Project:  test-project",
 				"Region:   us-east1",
 				"Role:     application",
@@ -147,7 +147,7 @@ func TestInstanceDrift_FormatText(t *testing.T) {
 				Drifts: []Drift{},
 			},
 			want: []string{
-				"Instance: test-instance",
+				"Cloud SQL Instance: test-instance",
 				"Maintenance Window: Day 3, Hour 4 UTC (stable)",
 				"No drift detected",
 			},

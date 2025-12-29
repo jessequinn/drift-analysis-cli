@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jessequinn/drift-analysis-cli/pkg/report"
 	"gopkg.in/yaml.v3"
 )
@@ -86,23 +87,44 @@ func (r *DriftReport) countBySeverity() (critical, high, medium, low int) {
 func (cd *ClusterDrift) FormatText() string {
 	var sb strings.Builder
 
-	sb.WriteString("───────────────────────────────────────────────────────────────────────────────\n")
-	sb.WriteString(fmt.Sprintf("Cluster:  %s\n", cd.Name))
-	sb.WriteString(fmt.Sprintf("Project:  %s\n", cd.Project))
-	sb.WriteString(fmt.Sprintf("Location: %s\n", cd.Location))
-	sb.WriteString(fmt.Sprintf("Status:   %s\n", cd.Status))
+	// Define styles
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("45")).
+		Background(lipgloss.Color("236")).
+		Padding(0, 1)
+
+	labelStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("244")).
+		Bold(true)
+
+	valueStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252"))
+
+	nodePoolStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("cyan"))
+
+	divider := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Render("───────────────────────────────────────────────────────────────────────────────")
+
+	sb.WriteString(divider + "\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("☸ GKE Cluster: %s", cd.Name)) + "\n\n")
+	sb.WriteString(labelStyle.Render("Project:  ") + valueStyle.Render(cd.Project) + "\n")
+	sb.WriteString(labelStyle.Render("Location: ") + valueStyle.Render(cd.Location) + "\n")
+	sb.WriteString(labelStyle.Render("Status:   ") + valueStyle.Render(cd.Status) + "\n")
 
 	if len(cd.Labels) > 0 {
 		if role, exists := cd.Labels["cluster-role"]; exists {
-			sb.WriteString(fmt.Sprintf("Role:     %s\n", role))
+			sb.WriteString(labelStyle.Render("Role:     ") + valueStyle.Render(role) + "\n")
 		}
 	}
 
 	// Show node pools summary
 	if len(cd.NodePools) > 0 {
-		sb.WriteString(fmt.Sprintf("Node Pools: %d\n", len(cd.NodePools)))
+		sb.WriteString(labelStyle.Render(fmt.Sprintf("Node Pools: %d", len(cd.NodePools))) + "\n")
 		for _, np := range cd.NodePools {
-			sb.WriteString(fmt.Sprintf("  - %s: %s (%d nodes)\n", np.Name, np.MachineType, np.InitialNodeCount))
+			sb.WriteString(nodePoolStyle.Render(fmt.Sprintf("  • %s: %s (%d nodes)", np.Name, np.MachineType, np.InitialNodeCount)) + "\n")
 		}
 	}
 

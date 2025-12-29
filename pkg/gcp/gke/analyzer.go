@@ -110,7 +110,9 @@ type AddonsConfig struct {
 
 // Analyzer performs drift analysis on GKE clusters
 type Analyzer struct {
-	service *container.Service
+	service    *container.Service
+	lastReport *DriftReport
+	projects   []string
 }
 
 // NewAnalyzer creates a new GKE Analyzer instance
@@ -126,6 +128,28 @@ func NewAnalyzer(ctx context.Context) (*Analyzer, error) {
 // Close releases resources held by the Analyzer
 func (a *Analyzer) Close() error {
 	return nil
+}
+
+// Analyze performs drift analysis implementing analyzer.ResourceAnalyzer interface
+func (a *Analyzer) Analyze(ctx context.Context, projects []string) error {
+	a.projects = projects
+	return nil
+}
+
+// GenerateReport generates a formatted report implementing analyzer.ResourceAnalyzer interface
+func (a *Analyzer) GenerateReport() (string, error) {
+	if a.lastReport == nil {
+		return "", fmt.Errorf("no analysis has been performed yet")
+	}
+	return a.lastReport.FormatText(), nil
+}
+
+// GetDriftCount returns the number of drifts detected implementing analyzer.ResourceAnalyzer interface
+func (a *Analyzer) GetDriftCount() int {
+	if a.lastReport == nil {
+		return 0
+	}
+	return a.lastReport.DriftedClusters
 }
 
 // DiscoverClusters finds all GKE clusters across the specified GCP projects
@@ -361,6 +385,7 @@ func (a *Analyzer) AnalyzeDrift(clusters []*ClusterInstance, baseline *ClusterCo
 		}
 	}
 
+	a.lastReport = report
 	return report
 }
 

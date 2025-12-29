@@ -42,6 +42,19 @@ type GKEBaseline struct {
 	NodePoolConfig *NodePoolConfig   `yaml:"nodepool_config,omitempty"`
 }
 
+// GetName returns the baseline name implementing analyzer.Baseline interface
+func (b GKEBaseline) GetName() string {
+	return b.Name
+}
+
+// Validate checks if the baseline is valid implementing analyzer.Baseline interface
+func (b GKEBaseline) Validate() error {
+	if b.Name == "" {
+		return fmt.Errorf("baseline name is required")
+	}
+	return nil
+}
+
 // Execute runs the GKE drift analysis command
 func (c *Command) Execute(ctx context.Context) error {
 	// Use provided baselines and projects from main

@@ -39,6 +39,19 @@ type SQLBaseline struct {
 	Config       *DatabaseConfig   `yaml:"config"`
 }
 
+// GetName returns the baseline name implementing analyzer.Baseline interface
+func (b SQLBaseline) GetName() string {
+	return b.Name
+}
+
+// Validate checks if the baseline is valid implementing analyzer.Baseline interface
+func (b SQLBaseline) Validate() error {
+	if b.Name == "" {
+		return fmt.Errorf("baseline name is required")
+	}
+	return nil
+}
+
 // Execute runs the SQL drift analysis command
 func (c *Command) Execute(ctx context.Context) error {
 	// Use provided baselines and projects from main

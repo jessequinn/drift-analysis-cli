@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/charmbracelet/lipgloss"
 	"github.com/jessequinn/drift-analysis-cli/pkg/report"
 	"gopkg.in/yaml.v3"
 )
@@ -85,30 +86,54 @@ func (r *DriftReport) countBySeverity() (critical, high, medium, low int) {
 func (id *InstanceDrift) FormatText() string {
 	var sb strings.Builder
 
-	sb.WriteString("───────────────────────────────────────────────────────────────────────────────\n")
-	sb.WriteString(fmt.Sprintf("Instance: %s\n", id.Name))
-	sb.WriteString(fmt.Sprintf("Project:  %s\n", id.Project))
-	sb.WriteString(fmt.Sprintf("Region:   %s\n", id.Region))
-	sb.WriteString(fmt.Sprintf("State:    %s\n", id.State))
+	// Define styles
+	headerStyle := lipgloss.NewStyle().
+		Bold(true).
+		Foreground(lipgloss.Color("39")).
+		Background(lipgloss.Color("236")).
+		Padding(0, 1)
+
+	labelStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("244")).
+		Bold(true)
+
+	valueStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("252"))
+
+	divider := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("240")).
+		Render("───────────────────────────────────────────────────────────────────────────────")
+
+	sb.WriteString(divider + "\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("📊 Cloud SQL Instance: %s", id.Name)) + "\n\n")
+	sb.WriteString(labelStyle.Render("Project:  ") + valueStyle.Render(id.Project) + "\n")
+	sb.WriteString(labelStyle.Render("Region:   ") + valueStyle.Render(id.Region) + "\n")
+	sb.WriteString(labelStyle.Render("State:    ") + valueStyle.Render(id.State) + "\n")
 
 	if len(id.Labels) > 0 {
 		if role, exists := id.Labels["database-role"]; exists {
-			sb.WriteString(fmt.Sprintf("Role:     %s\n", role))
+			sb.WriteString(labelStyle.Render("Role:     ") + valueStyle.Render(role) + "\n")
 		}
 	}
 
 	if id.MaintenanceWindow != nil {
-		sb.WriteString(fmt.Sprintf("Maintenance Window: Day %d, Hour %d UTC (%s)\n",
-			id.MaintenanceWindow.Day, id.MaintenanceWindow.Hour, id.MaintenanceWindow.UpdateTrack))
+		sb.WriteString(labelStyle.Render("Maintenance Window: ") +
+			valueStyle.Render(fmt.Sprintf("Day %d, Hour %d UTC (%s)",
+				id.MaintenanceWindow.Day, id.MaintenanceWindow.Hour, id.MaintenanceWindow.UpdateTrack)) + "\n")
 	}
 
 	sb.WriteString("\n")
 	sb.WriteString(report.FormatDrifts(id.Drifts))
 
 	if len(id.Recommendations) > 0 {
-		sb.WriteString("Recommendations:\n")
+		recStyle := lipgloss.NewStyle().
+			Foreground(lipgloss.Color("220")).
+			Bold(true)
+		sb.WriteString(recStyle.Render("💡 Recommendations:") + "\n")
 		for _, rec := range id.Recommendations {
-			sb.WriteString(fmt.Sprintf("  - %s\n", rec))
+			sb.WriteString(lipgloss.NewStyle().
+				Foreground(lipgloss.Color("250")).
+				Render(fmt.Sprintf("  • %s", rec)) + "\n")
 		}
 	}
 

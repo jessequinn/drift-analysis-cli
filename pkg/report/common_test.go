@@ -11,12 +11,12 @@ func TestGetIconForSeverity(t *testing.T) {
 		severity string
 		want     string
 	}{
-		{"critical", "critical", "[!]"},
-		{"high", "high", "[!]"},
-		{"medium", "medium", "[*]"},
-		{"low", "low", "[-]"},
-		{"unknown", "unknown", "[ ]"},
-		{"empty", "", "[ ]"},
+		{"critical", "critical", "✗"},
+		{"high", "high", "⚠"},
+		{"medium", "medium", "●"},
+		{"low", "low", "○"},
+		{"unknown", "unknown", " "},
+		{"empty", "", " "},
 	}
 
 	for _, tt := range tests {
@@ -106,7 +106,7 @@ func TestFormatDriftSummary(t *testing.T) {
 			high:     1,
 			medium:   3,
 			low:      4,
-			want:     []string{"Drift Summary:", "CRITICAL: 2", "HIGH:     1", "MEDIUM:   3", "LOW:      4"},
+			want:     []string{"Drift Summary", "CRITICAL: 2", "HIGH:     1", "MEDIUM:   3", "LOW:      4"},
 		},
 		{
 			name:     "only critical",
@@ -114,7 +114,7 @@ func TestFormatDriftSummary(t *testing.T) {
 			high:     0,
 			medium:   0,
 			low:      0,
-			want:     []string{"Drift Summary:", "CRITICAL: 5"},
+			want:     []string{"Drift Summary", "CRITICAL: 5"},
 		},
 	}
 

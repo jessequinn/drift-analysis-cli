@@ -62,7 +62,7 @@ func TestDriftReport_FormatText(t *testing.T) {
 				"Total Clusters: 3",
 				"Clusters with Drift: 1",
 				"Compliance Rate: 66.7%",
-				"Drift Summary:",
+				"Drift Summary",
 				"CRITICAL: 1",
 				"HIGH:     1",
 				"Detected Drifts: 2",
@@ -98,7 +98,7 @@ func TestClusterDrift_FormatText(t *testing.T) {
 				Drifts:   []Drift{},
 			},
 			want: []string{
-				"Cluster:  test-cluster",
+				"GKE Cluster: test-cluster",
 				"Project:  test-project",
 				"Location: us-central1",
 				"Status:   RUNNING",
@@ -122,7 +122,7 @@ func TestClusterDrift_FormatText(t *testing.T) {
 				},
 			},
 			want: []string{
-				"Cluster:  prod-cluster",
+				"GKE Cluster: prod-cluster",
 				"Project:  test-project",
 				"Location: us-east1",
 				"Role:     production",
@@ -147,7 +147,7 @@ func TestClusterDrift_FormatText(t *testing.T) {
 				Drifts:   []Drift{},
 			},
 			want: []string{
-				"Cluster:  test-cluster",
+				"GKE Cluster: test-cluster",
 				"Project:  test-project",
 				"Location: us-central1",
 				"Status:   RUNNING",
