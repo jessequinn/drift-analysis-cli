@@ -1,11 +1,13 @@
 package sql
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/jessequinn/drift-analysis-cli/pkg/report"
+	"gopkg.in/yaml.v3"
 )
 
 // DriftReport contains the complete analysis results for all instances
@@ -111,4 +113,22 @@ func (id *InstanceDrift) FormatText() string {
 	}
 
 	return sb.String()
+}
+
+// FormatJSON generates JSON output of the drift report
+func (r *DriftReport) FormatJSON() (string, error) {
+data, err := json.MarshalIndent(r, "", "  ")
+if err != nil {
+return "", fmt.Errorf("failed to marshal JSON: %w", err)
+}
+return string(data), nil
+}
+
+// FormatYAML generates YAML output of the drift report
+func (r *DriftReport) FormatYAML() (string, error) {
+data, err := yaml.Marshal(r)
+if err != nil {
+return "", fmt.Errorf("failed to marshal YAML: %w", err)
+}
+return string(data), nil
 }

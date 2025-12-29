@@ -2,7 +2,7 @@
 
 [![CI](https://github.com/jessequinn/drift-analysis-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/jessequinn/drift-analysis-cli/actions/workflows/ci.yml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/jessequinn/drift-analysis-cli)](https://goreportcard.com/report/github.com/jessequinn/drift-analysis-cli)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 A comprehensive CLI tool for detecting configuration drift across Google Cloud Platform resources including Cloud SQL PostgreSQL instances and GKE clusters.
 
@@ -386,4 +386,4 @@ drift-analysis-cli/
 
 ## License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
