@@ -8,7 +8,7 @@ import (
 
 func TestDriftReport_FormatText(t *testing.T) {
 	timestamp := time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC)
-	
+
 	tests := []struct {
 		name   string
 		report *DriftReport

@@ -14,7 +14,7 @@ import (
 
 // UnifiedConfig represents the unified YAML configuration for both SQL and GKE
 type UnifiedConfig struct {
-	Projects     []string           `yaml:"projects"`
+	Projects     []string          `yaml:"projects"`
 	SQLBaselines []sql.SQLBaseline `yaml:"sql_baselines,omitempty"`
 	GKEBaselines []gke.GKEBaseline `yaml:"gke_baselines,omitempty"`
 
