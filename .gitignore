@@ -1,0 +1,21 @@
+# Ignore everything by default
+*
+
+# But include source code and config files
+!*.go
+!go.mod
+!go.sum
+!*.yaml.example
+!*.md
+!LICENSE
+
+# Include directories
+!pkg/
+!pkg/**
+
+# Exclude build artifacts and local config
+drift-analysis-cli
+config.yaml
+config.yaml.old
+output.txt
+*.log
