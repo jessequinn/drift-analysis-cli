@@ -129,7 +129,7 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 	}
 
 	// Create inspector
-	inspector, err := sql.NewInspectorFromConnectionConfig(conn.ToConnectionConfig())
+	inspector, err := sql.NewInspectorFromDatabaseConnection(conn)
 	if err != nil {
 		return fmt.Errorf("failed to create inspector: %w", err)
 	}
@@ -325,7 +325,7 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 		}
 
 		// Create inspector
-		inspector, err := sql.NewInspectorFromConnectionConfig(conn.ToConnectionConfig())
+		inspector, err := sql.NewInspectorFromDatabaseConnection(&conn)
 		if err != nil {
 			fmt.Printf("  ERROR: Failed to create inspector: %v\n\n", err)
 			continue

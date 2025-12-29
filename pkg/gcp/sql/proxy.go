@@ -3,6 +3,7 @@ package sql
 import (
 	"context"
 	"fmt"
+	"net"
 	"os/exec"
 	"time"
 )
@@ -44,6 +45,20 @@ func (pm *ProxyManager) Start(ctx context.Context) error {
 		return pm.startGcloudProxy(ctx)
 	}
 	return pm.startCloudSQLProxy(ctx)
+}
+
+// waitForProxy waits for the proxy to be ready by checking if it's listening
+func (pm *ProxyManager) waitForProxy(maxWait time.Duration) error {
+	deadline := time.Now().Add(maxWait)
+	for time.Now().Before(deadline) {
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", pm.localPort), time.Second)
+		if err == nil {
+			conn.Close()
+			return nil
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+	return fmt.Errorf("proxy did not become ready within %v", maxWait)
 }
 
 // startGcloudProxy starts the proxy using gcloud command
@@ -115,17 +130,16 @@ func (pm *ProxyManager) startCloudSQLProxy(ctx context.Context) error {
 	for _, binary := range binaryNames {
 		pm.cmd = exec.CommandContext(ctx, binary, args...)
 		if err := pm.cmd.Start(); err == nil {
-			// Wait longer for the proxy to initialize and check logs
+			// Wait for the proxy to be ready by checking port
 			fmt.Printf("Started %s (PID: %d), waiting for it to be ready...\n", binary, pm.cmd.Process.Pid)
-			time.Sleep(8 * time.Second)
 			
-			// Check if process is still running
-			if pm.IsRunning() {
-				fmt.Println("Proxy process is running and ready")
-				return nil
-			} else {
-				return fmt.Errorf("proxy process exited unexpectedly")
+			if err := pm.waitForProxy(30 * time.Second); err != nil {
+				pm.cmd.Process.Kill()
+				return fmt.Errorf("proxy failed to become ready: %w", err)
 			}
+			
+			fmt.Println("Proxy process is running and ready")
+			return nil
 		} else {
 			lastErr = err
 		}

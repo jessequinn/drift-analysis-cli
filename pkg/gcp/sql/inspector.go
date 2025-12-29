@@ -23,6 +23,7 @@ type DatabaseInspector struct {
 	database             string
 	usePrivateIP         bool   // whether to use private IP for Cloud SQL
 	proxyManager         *ProxyManager // manages Cloud SQL Proxy process
+	sshTunnel            *SSHTunnelManager // manages SSH tunnel through bastion
 	
 	// Direct connection fields
 	connectionString string
@@ -166,6 +167,43 @@ func NewInspectorFromConnectionConfig(config *ConnectionConfig) (*DatabaseInspec
 	}, nil
 }
 
+// NewInspectorFromDatabaseConnection creates a new database inspector from DatabaseConnection
+func NewInspectorFromDatabaseConnection(conn *DatabaseConnection) (*DatabaseInspector, error) {
+	if err := conn.Validate(); err != nil {
+		return nil, fmt.Errorf("invalid connection config: %w", err)
+	}
+	
+	// Check if SSH tunnel is configured
+	if conn.SSHTunnel != nil && conn.SSHTunnel.Enabled {
+		return NewInspectorWithSSHTunnel(conn)
+	}
+	
+	// Otherwise use the standard connection config path
+	return NewInspectorFromConnectionConfig(conn.ToConnectionConfig())
+}
+
+// NewInspectorWithSSHTunnel creates a new inspector that uses SSH tunnel through bastion
+func NewInspectorWithSSHTunnel(conn *DatabaseConnection) (*DatabaseInspector, error) {
+	// Create SSH tunnel manager
+	sshTunnel, err := NewSSHTunnelManager(conn.SSHTunnel)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create SSH tunnel manager: %w", err)
+	}
+	
+	// Connection will go through the SSH tunnel
+	// The tunnel manager will provide the connection string
+	return &DatabaseInspector{
+		useCloudSQLConnector:   false,
+		instanceConnectionName: conn.GetConnectionName(),
+		user:                   conn.Username,
+		password:               conn.Password,
+		database:               conn.Database,
+		usePrivateIP:           true,
+		sshTunnel:              sshTunnel,
+		connectionString:       "", // Will be set when tunnel is established
+	}, nil
+}
+
 // NewInspectorWithProxy creates a new inspector that manages a proxy process
 func NewInspectorWithProxy(instanceConnectionName, user, password, database string, usePrivateIP bool) (*DatabaseInspector, error) {
 	// Create proxy manager - use cloud-sql-proxy binary instead of gcloud
@@ -180,7 +218,7 @@ func NewInspectorWithProxy(instanceConnectionName, user, password, database stri
 	
 	// Create direct connection string to localhost (proxy will handle the tunnel)
 	// Increase timeouts for Cloud SQL proxy connections
-	connStr := fmt.Sprintf("host=localhost port=%d user=%s password=%s dbname=%s sslmode=disable connect_timeout=30",
+	connStr := fmt.Sprintf("host=localhost port=%d user=%s password=%s dbname=%s sslmode=disable connect_timeout=60 statement_timeout=60000",
 		proxyConfig.LocalPort, user, password, database)
 	
 	return &DatabaseInspector{
@@ -197,6 +235,24 @@ func NewInspectorWithProxy(instanceConnectionName, user, password, database stri
 
 // InspectDatabase connects and extracts detailed schema information
 func (di *DatabaseInspector) InspectDatabase(ctx context.Context) (*DatabaseSchema, error) {
+	// Start SSH tunnel if configured
+	if di.sshTunnel != nil {
+		fmt.Printf("Starting SSH tunnel for %s...\n", di.instanceConnectionName)
+		if err := di.sshTunnel.Start(ctx); err != nil {
+			return nil, fmt.Errorf("failed to start SSH tunnel: %w", err)
+		}
+		defer func() {
+			fmt.Println("Stopping SSH tunnel...")
+			if err := di.sshTunnel.Stop(); err != nil {
+				fmt.Printf("Warning: failed to stop SSH tunnel: %v\n", err)
+			}
+		}()
+		fmt.Println("SSH tunnel established successfully")
+		
+		// Set connection string to use the tunnel
+		di.connectionString = di.sshTunnel.GetConnectionString(di.user, di.password, di.database)
+	}
+	
 	// Start proxy if configured
 	if di.proxyManager != nil {
 		fmt.Printf("Starting Cloud SQL Proxy for %s...\n", di.instanceConnectionName)

@@ -57,6 +57,22 @@ type DatabaseConnection struct {
 	Project      string `yaml:"project,omitempty"`
 	Region       string `yaml:"region,omitempty"`
 	InstanceName string `yaml:"instance_name,omitempty"`
+	
+	// SSH Tunnel configuration (for bastion/jump host access)
+	SSHTunnel *SSHTunnelConfig `yaml:"ssh_tunnel,omitempty"`
+}
+
+// SSHTunnelConfig defines SSH tunnel configuration for accessing private databases
+type SSHTunnelConfig struct {
+	Enabled      bool   `yaml:"enabled"`                   // Enable SSH tunnel
+	BastionHost  string `yaml:"bastion_host"`              // Bastion host name (e.g., "bastion")
+	BastionZone  string `yaml:"bastion_zone"`              // GCE zone (e.g., "us-west1-a")
+	Project      string `yaml:"project"`                   // GCP project
+	LocalPort    int    `yaml:"local_port,omitempty"`      // Local port (default: 5432)
+	PrivateIP    string `yaml:"private_ip"`                // Cloud SQL private IP
+	RemotePort   int    `yaml:"remote_port,omitempty"`     // Remote port (default: 5432)
+	UseIAP       bool   `yaml:"use_iap"`                   // Use Identity-Aware Proxy
+	SSHKeyExpiry string `yaml:"ssh_key_expiry,omitempty"`  // SSH key expiry (default: 1h)
 }
 
 // GetConnectionName returns the full instance connection name

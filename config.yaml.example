@@ -82,22 +82,35 @@ sql_baselines:
 #
 # Use this for tracking database schema changes over time.
 database_connections:
-  # Production application database
+  # Production application database via SSH tunnel through bastion
   - name: "prod-app-db"
     instance_connection_name: "my-production-project:us-central1:app-instance"
     database: "app_db"
     username: "inspector"         # Read-only user recommended
     password: ""                  # Leave empty for IAM auth
-    use_private_ip: true          # Use private IP (requires VPC connectivity)
+    use_private_ip: true          # Use private IP (requires SSH tunnel or VPN)
     project: "my-production-project"
+    
+    # SSH Tunnel configuration for bastion/jump host access
+    # Use this when Cloud SQL has private IP only
+    ssh_tunnel:
+      enabled: true
+      bastion_host: "bastion"                    # Bastion host name
+      bastion_zone: "us-central1-a"              # GCE zone of bastion
+      project: "my-production-project"           # GCP project
+      private_ip: "10.50.0.3"                    # Cloud SQL private IP address
+      local_port: 5432                           # Local port for tunnel
+      remote_port: 5432                          # Remote PostgreSQL port
+      use_iap: true                              # Use Identity-Aware Proxy
+      ssh_key_expiry: "1h"                       # SSH key expiration
   
-  # Staging database
+  # Staging database (example without SSH tunnel)
   - name: "staging-app-db"
     instance_connection_name: "my-staging-project:us-central1:staging-instance"
     database: "app_db"
     username: "postgres"
     password: "${DB_PASSWORD}"    # Can use environment variables
-    use_private_ip: true
+    use_private_ip: false         # Public IP - no tunnel needed
   
   # Microservices database (alternative format)
   - name: "microservices-db"
@@ -107,14 +120,14 @@ database_connections:
     database: "service_a"
     username: "readonly"
     use_private_ip: true
-  
-  # Public IP example (no proxy needed)
-  - name: "dev-public-db"
-    instance_connection_name: "my-qa-project:us-east1:dev-instance"
-    database: "postgres"
-    username: "postgres"
-    password: "dev-password"
-    use_private_ip: false         # Public IP, no proxy needed
+    
+    ssh_tunnel:
+      enabled: true
+      bastion_host: "bastion"
+      bastion_zone: "us-central1-a"
+      project: "my-production-project"
+      private_ip: "10.50.0.5"
+      use_iap: true
 
 # ============================================================================
 # GKE baselines
@@ -188,21 +201,27 @@ gke_baselines:
 # Notes
 # ============================================================================
 #
-# For private IP connections:
-# - Your machine must have VPC connectivity (VPN, Cloud VPN, or same VPC)
-# - Cloud SQL Proxy is automatically managed (no manual setup needed)
-# - Requires: gcloud auth application-default login
-# - Requires: cloudsql.instances.connect IAM permission
+# SSH Tunnel (for private IP only instances):
+# - Requires bastion host/jump box in the same VPC as Cloud SQL
+# - Uses gcloud compute ssh with IAP tunneling
+# - Automatically manages tunnel lifecycle (start/stop)
+# - Command executed: gcloud compute ssh --zone ZONE BASTION --tunnel-through-iap
+#                     --project PROJECT --ssh-flag="-N -L localhost:PORT:PRIVATE_IP:5432"
+#
+# To get Cloud SQL private IP:
+# - gcloud sql instances describe INSTANCE --project=PROJECT --format="value(ipAddresses[0].ipAddress)"
 #
 # For public IP connections:
 # - Set use_private_ip: false
 # - Ensure authorized networks are configured on the instance
+# - No SSH tunnel needed
 #
 # Security recommendations:
 # - Use read-only database users for schema inspection
 # - Use IAM authentication (leave password empty)
 # - Store sensitive passwords in environment variables
 # - Consider using Secret Manager for production
+# - Restrict bastion host access via IAP policies
 #
 # Cache management:
 # - Cached schemas stored in: .drift-cache/database-schemas/
