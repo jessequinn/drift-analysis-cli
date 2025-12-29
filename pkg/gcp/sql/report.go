@@ -105,7 +105,7 @@ func (id *InstanceDrift) FormatText() string {
 		Render("───────────────────────────────────────────────────────────────────────────────")
 
 	sb.WriteString(divider + "\n")
-	sb.WriteString(headerStyle.Render(fmt.Sprintf("📊 Cloud SQL Instance: %s", id.Name)) + "\n\n")
+	sb.WriteString(headerStyle.Render(fmt.Sprintf("Cloud SQL Instance: %s", id.Name)) + "\n\n")
 	sb.WriteString(labelStyle.Render("Project:  ") + valueStyle.Render(id.Project) + "\n")
 	sb.WriteString(labelStyle.Render("Region:   ") + valueStyle.Render(id.Region) + "\n")
 	sb.WriteString(labelStyle.Render("State:    ") + valueStyle.Render(id.State) + "\n")
@@ -142,18 +142,18 @@ func (id *InstanceDrift) FormatText() string {
 
 // FormatJSON generates JSON output of the drift report
 func (r *DriftReport) FormatJSON() (string, error) {
-data, err := json.MarshalIndent(r, "", "  ")
-if err != nil {
-return "", fmt.Errorf("failed to marshal JSON: %w", err)
-}
-return string(data), nil
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // FormatYAML generates YAML output of the drift report
 func (r *DriftReport) FormatYAML() (string, error) {
-data, err := yaml.Marshal(r)
-if err != nil {
-return "", fmt.Errorf("failed to marshal YAML: %w", err)
-}
-return string(data), nil
+	data, err := yaml.Marshal(r)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal YAML: %w", err)
+	}
+	return string(data), nil
 }

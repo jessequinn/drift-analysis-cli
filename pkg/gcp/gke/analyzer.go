@@ -196,9 +196,8 @@ func (a *Analyzer) discoverProjectClusters(ctx context.Context, project string) 
 // extractClusterConfig extracts cluster-level configuration
 func extractClusterConfig(cluster *container.Cluster) *ClusterConfig {
 	config := &ClusterConfig{
-		MasterVersion:  cluster.CurrentMasterVersion,
-		PrivateCluster: cluster.PrivateClusterConfig != nil && cluster.PrivateClusterConfig.EnablePrivateNodes,
-		NetworkPolicy:  cluster.NetworkPolicy != nil && cluster.NetworkPolicy.Enabled,
+		MasterVersion: cluster.CurrentMasterVersion,
+		NetworkPolicy: cluster.NetworkPolicy != nil && cluster.NetworkPolicy.Enabled,
 	}
 
 	// Release channel
@@ -206,117 +205,31 @@ func extractClusterConfig(cluster *container.Cluster) *ClusterConfig {
 		config.ReleaseChannel = cluster.ReleaseChannel.Channel
 	}
 
-	// Network config
-	if cluster.Network != "" {
-		config.Network = cluster.Network
-	}
-	if cluster.Subnetwork != "" {
-		config.Subnetwork = cluster.Subnetwork
-	}
+	// Extract network configuration
+	config.Network, config.Subnetwork, config.DatapathProvider = extractNetworkConfig(cluster)
 
-	// Private cluster config
-	if cluster.PrivateClusterConfig != nil {
-		if cluster.PrivateClusterConfig.MasterGlobalAccessConfig != nil {
-			config.MasterGlobalAccess = cluster.PrivateClusterConfig.MasterGlobalAccessConfig.Enabled
-		}
-	}
+	// Extract private cluster configuration
+	config.PrivateCluster, config.MasterGlobalAccess = extractPrivateClusterConfig(cluster)
 
-	// Master authorized networks
-	if cluster.MasterAuthorizedNetworksConfig != nil && cluster.MasterAuthorizedNetworksConfig.Enabled {
-		for _, cidr := range cluster.MasterAuthorizedNetworksConfig.CidrBlocks {
-			config.MasterAuthorizedNets = append(config.MasterAuthorizedNets, cidr.CidrBlock)
-		}
-	}
+	// Extract master authorized networks
+	config.MasterAuthorizedNets = extractMasterAuthorizedNets(cluster)
 
-	// Network configuration
-	if cluster.NetworkConfig != nil {
-		config.DatapathProvider = cluster.NetworkConfig.DatapathProvider
-	}
+	// Extract IP allocation policy
+	config.IPAllocationPolicy = extractIPAllocationPolicy(cluster)
 
-	// IP Allocation Policy
-	if cluster.IpAllocationPolicy != nil {
-		config.IPAllocationPolicy = &IPAllocationPolicy{
-			UseIPAliases:     cluster.IpAllocationPolicy.UseIpAliases,
-			ClusterIPv4CIDR:  cluster.IpAllocationPolicy.ClusterIpv4CidrBlock,
-			ServicesIPv4CIDR: cluster.IpAllocationPolicy.ServicesIpv4CidrBlock,
-			StackType:        cluster.IpAllocationPolicy.StackType,
-		}
-	}
+	// Extract security features
+	config.WorkloadIdentity, config.ShieldedNodes, config.DatabaseEncryption,
+		config.BinaryAuthorization, config.SecurityPosture = extractSecurityFeatures(cluster)
 
-	// Security features
-	// Workload identity
-	if cluster.WorkloadIdentityConfig != nil {
-		config.WorkloadIdentity = cluster.WorkloadIdentityConfig.WorkloadPool != ""
-	}
+	// Extract addons
+	config.Addons = extractAddonsConfig(cluster)
 
-	// Shielded nodes
-	if cluster.ShieldedNodes != nil {
-		config.ShieldedNodes = cluster.ShieldedNodes.Enabled
-	}
+	// Extract logging and monitoring
+	config.LoggingConfig = extractLoggingConfig(cluster)
+	config.MonitoringConfig = extractMonitoringConfig(cluster)
 
-	// Database encryption
-	if cluster.DatabaseEncryption != nil {
-		config.DatabaseEncryption = cluster.DatabaseEncryption.State == "ENCRYPTED"
-	}
-
-	// Security posture
-	if cluster.SecurityPostureConfig != nil {
-		config.SecurityPosture = cluster.SecurityPostureConfig.Mode
-	}
-
-	// Binary authorization
-	if cluster.BinaryAuthorization != nil {
-		config.BinaryAuthorization = cluster.BinaryAuthorization.Enabled
-	}
-
-	// Addons
-	if cluster.AddonsConfig != nil {
-		config.Addons = &AddonsConfig{
-			HTTPLoadBalancing:        cluster.AddonsConfig.HttpLoadBalancing == nil || !cluster.AddonsConfig.HttpLoadBalancing.Disabled,
-			HorizontalPodAutoscaling: cluster.AddonsConfig.HorizontalPodAutoscaling == nil || !cluster.AddonsConfig.HorizontalPodAutoscaling.Disabled,
-			NetworkPolicy:            cluster.AddonsConfig.NetworkPolicyConfig != nil && !cluster.AddonsConfig.NetworkPolicyConfig.Disabled,
-		}
-	}
-
-	// Logging config
-	if cluster.LoggingConfig != nil && cluster.LoggingConfig.ComponentConfig != nil {
-		config.LoggingConfig = &LoggingConfig{}
-		for _, component := range cluster.LoggingConfig.ComponentConfig.EnableComponents {
-			if component == "SYSTEM_COMPONENTS" {
-				config.LoggingConfig.EnableSystemLogs = true
-			}
-			if component == "WORKLOADS" {
-				config.LoggingConfig.EnableWorkloadLogs = true
-			}
-		}
-	}
-
-	// Monitoring config
-	if cluster.MonitoringConfig != nil && cluster.MonitoringConfig.ComponentConfig != nil {
-		config.MonitoringConfig = &MonitoringConfig{}
-		for _, component := range cluster.MonitoringConfig.ComponentConfig.EnableComponents {
-			switch component {
-			case "SYSTEM_COMPONENTS":
-				config.MonitoringConfig.EnableSystemMetrics = true
-			case "APISERVER":
-				config.MonitoringConfig.EnableAPIServerMetrics = true
-			case "CONTROLLER_MANAGER":
-				config.MonitoringConfig.EnableControllerMetrics = true
-			case "SCHEDULER":
-				config.MonitoringConfig.EnableSchedulerMetrics = true
-			}
-		}
-	}
-
-	// Maintenance window
-	if cluster.MaintenancePolicy != nil && cluster.MaintenancePolicy.Window != nil {
-		if cluster.MaintenancePolicy.Window.DailyMaintenanceWindow != nil {
-			config.MaintenanceWindow = &MaintenanceWindow{
-				StartTime: cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.StartTime,
-				Duration:  cluster.MaintenancePolicy.Window.DailyMaintenanceWindow.Duration,
-			}
-		}
-	}
+	// Extract maintenance window
+	config.MaintenanceWindow = extractMaintenanceWindow(cluster)
 
 	return config
 }
@@ -418,7 +331,34 @@ func (a *Analyzer) analyzeCluster(cluster *ClusterInstance, baseline *ClusterCon
 
 // compareClusterConfig compares cluster configuration against baseline
 func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *ClusterDrift) {
-	// Version - only check minor version (1.33 vs 1.32)
+	// Version and channel
+	a.compareVersion(actual, baseline, drift)
+	a.compareReleaseChannel(actual, baseline, drift)
+
+	// Core cluster features
+	a.compareCoreFeaturesCluster(actual, baseline, drift)
+
+	// Networking
+	a.compareNetworking(actual, baseline, drift)
+
+	// IP Allocation Policy
+	a.compareIPAllocation(actual, baseline, drift)
+
+	// Security features
+	a.compareSecurityCluster(actual, baseline, drift)
+
+	// Logging and Monitoring
+	a.compareLoggingCluster(actual, baseline, drift)
+	a.compareMonitoringCluster(actual, baseline, drift)
+
+	// Compare master authorized networks if specified in baseline
+	if len(baseline.MasterAuthorizedNets) > 0 {
+		a.compareMasterAuthorizedNetworks(baseline, actual, drift)
+	}
+}
+
+// compareVersion compares master version
+func (a *Analyzer) compareVersion(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.MasterVersion != "" {
 		actualMinor := extractMinorVersion(actual.MasterVersion)
 		baselineMinor := extractMinorVersion(baseline.MasterVersion)
@@ -431,8 +371,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			})
 		}
 	}
+}
 
-	// Release channel
+// compareReleaseChannel compares release channel
+func (a *Analyzer) compareReleaseChannel(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.ReleaseChannel != "" && actual.ReleaseChannel != baseline.ReleaseChannel {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.release_channel",
@@ -441,8 +383,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			Severity: "medium",
 		})
 	}
+}
 
-	// Private cluster
+// compareCoreFeaturesCluster compares core cluster features
+func (a *Analyzer) compareCoreFeaturesCluster(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if actual.PrivateCluster != baseline.PrivateCluster {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.private_cluster",
@@ -452,7 +396,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 		})
 	}
 
-	// Workload identity
 	if actual.WorkloadIdentity != baseline.WorkloadIdentity {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.workload_identity",
@@ -462,7 +405,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 		})
 	}
 
-	// Network policy
 	if actual.NetworkPolicy != baseline.NetworkPolicy {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.network_policy",
@@ -472,7 +414,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 		})
 	}
 
-	// Binary authorization
 	if actual.BinaryAuthorization != baseline.BinaryAuthorization {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.binary_authorization",
@@ -481,9 +422,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			Severity: "high",
 		})
 	}
+}
 
-	// Networking options
-	// Datapath provider
+// compareNetworking compares networking configuration
+func (a *Analyzer) compareNetworking(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.DatapathProvider != "" && actual.DatapathProvider != baseline.DatapathProvider {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.datapath_provider",
@@ -493,7 +435,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 		})
 	}
 
-	// Master global access
 	if actual.MasterGlobalAccess != baseline.MasterGlobalAccess {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.master_global_access",
@@ -502,8 +443,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			Severity: "medium",
 		})
 	}
+}
 
-	// IP Allocation Policy
+// compareIPAllocation compares IP allocation policy
+func (a *Analyzer) compareIPAllocation(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.IPAllocationPolicy != nil && actual.IPAllocationPolicy != nil {
 		if baseline.IPAllocationPolicy.StackType != "" &&
 			actual.IPAllocationPolicy.StackType != baseline.IPAllocationPolicy.StackType {
@@ -515,9 +458,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			})
 		}
 	}
+}
 
-	// Security features
-	// Shielded nodes
+// compareSecurityCluster compares security features
+func (a *Analyzer) compareSecurityCluster(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if actual.ShieldedNodes != baseline.ShieldedNodes {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.shielded_nodes",
@@ -527,7 +471,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 		})
 	}
 
-	// Database encryption
 	if actual.DatabaseEncryption != baseline.DatabaseEncryption {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.database_encryption",
@@ -537,7 +480,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 		})
 	}
 
-	// Security posture
 	if baseline.SecurityPosture != "" && actual.SecurityPosture != baseline.SecurityPosture {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.security_posture",
@@ -546,8 +488,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			Severity: "high",
 		})
 	}
+}
 
-	// Logging configuration
+// compareLoggingCluster compares logging configuration
+func (a *Analyzer) compareLoggingCluster(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.LoggingConfig != nil && actual.LoggingConfig != nil {
 		if actual.LoggingConfig.EnableSystemLogs != baseline.LoggingConfig.EnableSystemLogs {
 			drift.Drifts = append(drift.Drifts, Drift{
@@ -566,8 +510,10 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 			})
 		}
 	}
+}
 
-	// Monitoring configuration
+// compareMonitoringCluster compares monitoring configuration
+func (a *Analyzer) compareMonitoringCluster(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.MonitoringConfig != nil && actual.MonitoringConfig != nil {
 		if actual.MonitoringConfig.EnableSystemMetrics != baseline.MonitoringConfig.EnableSystemMetrics {
 			drift.Drifts = append(drift.Drifts, Drift{
@@ -585,11 +531,6 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 				Severity: "low",
 			})
 		}
-	}
-
-	// Compare master authorized networks if specified in baseline
-	if len(baseline.MasterAuthorizedNets) > 0 {
-		a.compareMasterAuthorizedNetworks(baseline, actual, drift)
 	}
 }
 

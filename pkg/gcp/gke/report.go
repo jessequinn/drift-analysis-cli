@@ -136,18 +136,18 @@ func (cd *ClusterDrift) FormatText() string {
 
 // FormatJSON generates JSON output of the drift report
 func (r *DriftReport) FormatJSON() (string, error) {
-data, err := json.MarshalIndent(r, "", "  ")
-if err != nil {
-return "", fmt.Errorf("failed to marshal JSON: %w", err)
-}
-return string(data), nil
+	data, err := json.MarshalIndent(r, "", "  ")
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal JSON: %w", err)
+	}
+	return string(data), nil
 }
 
 // FormatYAML generates YAML output of the drift report
 func (r *DriftReport) FormatYAML() (string, error) {
-data, err := yaml.Marshal(r)
-if err != nil {
-return "", fmt.Errorf("failed to marshal YAML: %w", err)
-}
-return string(data), nil
+	data, err := yaml.Marshal(r)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal YAML: %w", err)
+	}
+	return string(data), nil
 }
