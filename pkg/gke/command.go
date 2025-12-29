@@ -24,21 +24,21 @@ type Command struct {
 
 // Config represents the YAML configuration file structure for GKE
 type Config struct {
-	Projects  []string           `yaml:"projects"`
-	Baselines []GKEBaseline      `yaml:"baselines,omitempty"`
-	
+	Projects  []string      `yaml:"projects"`
+	Baselines []GKEBaseline `yaml:"baselines,omitempty"`
+
 	// Legacy single baseline support
-	ClusterBaseline  *ClusterConfig  `yaml:"cluster_baseline,omitempty"`
-	NodePoolBaseline *NodePoolConfig `yaml:"nodepool_baseline,omitempty"`
+	ClusterBaseline  *ClusterConfig    `yaml:"cluster_baseline,omitempty"`
+	NodePoolBaseline *NodePoolConfig   `yaml:"nodepool_baseline,omitempty"`
 	FilterLabels     map[string]string `yaml:"filter_labels,omitempty"`
 }
 
 // GKEBaseline represents a GKE configuration baseline with optional filters
 type GKEBaseline struct {
-	Name             string            `yaml:"name,omitempty"`
-	FilterLabels     map[string]string `yaml:"filter_labels,omitempty"`
-	ClusterConfig    *ClusterConfig    `yaml:"cluster_config"`
-	NodePoolConfig   *NodePoolConfig   `yaml:"nodepool_config,omitempty"`
+	Name           string            `yaml:"name,omitempty"`
+	FilterLabels   map[string]string `yaml:"filter_labels,omitempty"`
+	ClusterConfig  *ClusterConfig    `yaml:"cluster_config"`
+	NodePoolConfig *NodePoolConfig   `yaml:"nodepool_config,omitempty"`
 }
 
 // Execute runs the GKE drift analysis command
@@ -97,7 +97,7 @@ func (c *Command) Execute(ctx context.Context) error {
 
 	// Perform drift analysis with multiple baselines
 	var report *DriftReport
-	
+
 	if len(baselines) > 0 {
 		// Multi-baseline mode
 		report = analyzeMultipleBaselines(analyzer, clusters, baselines)
@@ -136,7 +136,7 @@ func generateBaselineConfig(clusters []*ClusterInstance, outputPath string) erro
 
 	// Use first cluster as baseline
 	cluster := clusters[0]
-	
+
 	var nodePoolBaseline *NodePoolConfig
 	if len(cluster.NodePools) > 0 {
 		nodePoolBaseline = cluster.NodePools[0]
@@ -221,11 +221,11 @@ func analyzeMultipleBaselines(analyzer *Analyzer, allClusters []*ClusterInstance
 
 			drift := analyzer.analyzeCluster(cluster, baseline.ClusterConfig, baseline.NodePoolConfig)
 			combinedReport.Instances = append(combinedReport.Instances, drift)
-			
+
 			if len(drift.Drifts) > 0 {
 				combinedReport.DriftedClusters++
 			}
-			
+
 			analyzedClusters[clusterKey] = true
 		}
 	}

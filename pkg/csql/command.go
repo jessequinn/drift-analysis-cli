@@ -23,9 +23,9 @@ type Command struct {
 
 // Config represents the YAML configuration file structure for SQL
 type Config struct {
-	Projects  []string              `yaml:"projects"`
-	Baselines []SQLBaseline         `yaml:"baselines,omitempty"`
-	
+	Projects  []string      `yaml:"projects"`
+	Baselines []SQLBaseline `yaml:"baselines,omitempty"`
+
 	// Legacy single baseline support
 	Baseline     *DatabaseConfig   `yaml:"baseline,omitempty"`
 	FilterLabels map[string]string `yaml:"filter_labels,omitempty"`
@@ -33,9 +33,9 @@ type Config struct {
 
 // SQLBaseline represents a SQL configuration baseline with optional filters
 type SQLBaseline struct {
-	Name         string              `yaml:"name,omitempty"`
-	FilterLabels map[string]string   `yaml:"filter_labels,omitempty"`
-	Config       *DatabaseConfig     `yaml:"config"`
+	Name         string            `yaml:"name,omitempty"`
+	FilterLabels map[string]string `yaml:"filter_labels,omitempty"`
+	Config       *DatabaseConfig   `yaml:"config"`
 }
 
 // Execute runs the SQL drift analysis command
@@ -94,7 +94,7 @@ func (c *Command) Execute(ctx context.Context) error {
 
 	// Perform drift analysis with multiple baselines
 	var report *DriftReport
-	
+
 	if len(baselines) > 0 {
 		// Multi-baseline mode
 		report = analyzeMultipleBaselines(analyzer, instances, baselines)
@@ -188,9 +188,9 @@ func outputReport(report *DriftReport, format, outputPath string) error {
 // analyzeMultipleBaselines analyzes instances against multiple baselines with different filters
 func analyzeMultipleBaselines(analyzer *Analyzer, allInstances []*DatabaseInstance, baselines []SQLBaseline) *DriftReport {
 	combinedReport := &DriftReport{
-		Timestamp:     analyzer.GetTimestamp(),
+		Timestamp:      analyzer.GetTimestamp(),
 		TotalInstances: len(allInstances),
-		Instances:     make([]*InstanceDrift, 0),
+		Instances:      make([]*InstanceDrift, 0),
 	}
 
 	// Track which instances have been analyzed
@@ -213,11 +213,11 @@ func analyzeMultipleBaselines(analyzer *Analyzer, allInstances []*DatabaseInstan
 
 			drift := analyzer.AnalyzeInstance(inst, baseline.Config)
 			combinedReport.Instances = append(combinedReport.Instances, drift)
-			
+
 			if len(drift.Drifts) > 0 {
 				combinedReport.DriftedInstances++
 			}
-			
+
 			analyzedInstances[instanceKey] = true
 		}
 	}

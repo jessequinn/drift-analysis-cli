@@ -22,70 +22,70 @@ type ClusterInstance struct {
 
 // ClusterConfig holds the cluster-level configuration
 type ClusterConfig struct {
-	MasterVersion        string                    `yaml:"master_version" json:"master_version"`
-	ReleaseChannel       string                    `yaml:"release_channel" json:"release_channel"`
-	
+	MasterVersion  string `yaml:"master_version" json:"master_version"`
+	ReleaseChannel string `yaml:"release_channel" json:"release_channel"`
+
 	// Networking
-	Network              string                    `yaml:"network,omitempty" json:"network,omitempty"`
-	Subnetwork           string                    `yaml:"subnetwork,omitempty" json:"subnetwork,omitempty"`
-	PrivateCluster       bool                      `yaml:"private_cluster" json:"private_cluster"`
-	MasterGlobalAccess   bool                      `yaml:"master_global_access,omitempty" json:"master_global_access,omitempty"`
-	MasterAuthorizedNets []string                  `yaml:"master_authorized_networks,omitempty" json:"master_authorized_networks,omitempty"`
-	DatapathProvider     string                    `yaml:"datapath_provider,omitempty" json:"datapath_provider,omitempty"`
-	IPAllocationPolicy   *IPAllocationPolicy       `yaml:"ip_allocation_policy,omitempty" json:"ip_allocation_policy,omitempty"`
-	
+	Network              string              `yaml:"network,omitempty" json:"network,omitempty"`
+	Subnetwork           string              `yaml:"subnetwork,omitempty" json:"subnetwork,omitempty"`
+	PrivateCluster       bool                `yaml:"private_cluster" json:"private_cluster"`
+	MasterGlobalAccess   bool                `yaml:"master_global_access,omitempty" json:"master_global_access,omitempty"`
+	MasterAuthorizedNets []string            `yaml:"master_authorized_networks,omitempty" json:"master_authorized_networks,omitempty"`
+	DatapathProvider     string              `yaml:"datapath_provider,omitempty" json:"datapath_provider,omitempty"`
+	IPAllocationPolicy   *IPAllocationPolicy `yaml:"ip_allocation_policy,omitempty" json:"ip_allocation_policy,omitempty"`
+
 	// Security
-	WorkloadIdentity     bool                      `yaml:"workload_identity" json:"workload_identity"`
-	NetworkPolicy        bool                      `yaml:"network_policy" json:"network_policy"`
-	BinaryAuthorization  bool                      `yaml:"binary_authorization" json:"binary_authorization"`
-	ShieldedNodes        bool                      `yaml:"shielded_nodes" json:"shielded_nodes"`
-	DatabaseEncryption   bool                      `yaml:"database_encryption,omitempty" json:"database_encryption,omitempty"`
-	SecurityPosture      string                    `yaml:"security_posture,omitempty" json:"security_posture,omitempty"`
-	
+	WorkloadIdentity    bool   `yaml:"workload_identity" json:"workload_identity"`
+	NetworkPolicy       bool   `yaml:"network_policy" json:"network_policy"`
+	BinaryAuthorization bool   `yaml:"binary_authorization" json:"binary_authorization"`
+	ShieldedNodes       bool   `yaml:"shielded_nodes" json:"shielded_nodes"`
+	DatabaseEncryption  bool   `yaml:"database_encryption,omitempty" json:"database_encryption,omitempty"`
+	SecurityPosture     string `yaml:"security_posture,omitempty" json:"security_posture,omitempty"`
+
 	// Features
-	MaintenanceWindow    *MaintenanceWindow        `yaml:"maintenance_window,omitempty" json:"maintenance_window,omitempty"`
-	Addons               *AddonsConfig             `yaml:"addons,omitempty" json:"addons,omitempty"`
-	LoggingConfig        *LoggingConfig            `yaml:"logging_config,omitempty" json:"logging_config,omitempty"`
-	MonitoringConfig     *MonitoringConfig         `yaml:"monitoring_config,omitempty" json:"monitoring_config,omitempty"`
+	MaintenanceWindow *MaintenanceWindow `yaml:"maintenance_window,omitempty" json:"maintenance_window,omitempty"`
+	Addons            *AddonsConfig      `yaml:"addons,omitempty" json:"addons,omitempty"`
+	LoggingConfig     *LoggingConfig     `yaml:"logging_config,omitempty" json:"logging_config,omitempty"`
+	MonitoringConfig  *MonitoringConfig  `yaml:"monitoring_config,omitempty" json:"monitoring_config,omitempty"`
 }
 
 // IPAllocationPolicy holds IP allocation configuration
 type IPAllocationPolicy struct {
-	UseIPAliases         bool   `yaml:"use_ip_aliases" json:"use_ip_aliases"`
-	ClusterIPv4CIDR      string `yaml:"cluster_ipv4_cidr,omitempty" json:"cluster_ipv4_cidr,omitempty"`
-	ServicesIPv4CIDR     string `yaml:"services_ipv4_cidr,omitempty" json:"services_ipv4_cidr,omitempty"`
-	StackType            string `yaml:"stack_type,omitempty" json:"stack_type,omitempty"`
+	UseIPAliases     bool   `yaml:"use_ip_aliases" json:"use_ip_aliases"`
+	ClusterIPv4CIDR  string `yaml:"cluster_ipv4_cidr,omitempty" json:"cluster_ipv4_cidr,omitempty"`
+	ServicesIPv4CIDR string `yaml:"services_ipv4_cidr,omitempty" json:"services_ipv4_cidr,omitempty"`
+	StackType        string `yaml:"stack_type,omitempty" json:"stack_type,omitempty"`
 }
 
 // LoggingConfig holds logging configuration
 type LoggingConfig struct {
-	EnableSystemLogs    bool `yaml:"enable_system_logs" json:"enable_system_logs"`
-	EnableWorkloadLogs  bool `yaml:"enable_workload_logs" json:"enable_workload_logs"`
+	EnableSystemLogs   bool `yaml:"enable_system_logs" json:"enable_system_logs"`
+	EnableWorkloadLogs bool `yaml:"enable_workload_logs" json:"enable_workload_logs"`
 }
 
 // MonitoringConfig holds monitoring configuration
 type MonitoringConfig struct {
-	EnableSystemMetrics    bool `yaml:"enable_system_metrics" json:"enable_system_metrics"`
-	EnableAPIServerMetrics bool `yaml:"enable_apiserver_metrics" json:"enable_apiserver_metrics"`
+	EnableSystemMetrics     bool `yaml:"enable_system_metrics" json:"enable_system_metrics"`
+	EnableAPIServerMetrics  bool `yaml:"enable_apiserver_metrics" json:"enable_apiserver_metrics"`
 	EnableControllerMetrics bool `yaml:"enable_controller_metrics" json:"enable_controller_metrics"`
-	EnableSchedulerMetrics bool `yaml:"enable_scheduler_metrics" json:"enable_scheduler_metrics"`
+	EnableSchedulerMetrics  bool `yaml:"enable_scheduler_metrics" json:"enable_scheduler_metrics"`
 }
 
 // NodePoolConfig holds node pool configuration
 type NodePoolConfig struct {
-	Name            string            `yaml:"name" json:"name"`
-	Version         string            `yaml:"version" json:"version"`
-	MachineType     string            `yaml:"machine_type" json:"machine_type"`
-	DiskSizeGB      int64             `yaml:"disk_size_gb" json:"disk_size_gb"`
-	DiskType        string            `yaml:"disk_type,omitempty" json:"disk_type,omitempty"`
-	ImageType       string            `yaml:"image_type" json:"image_type"`
-	InitialNodeCount int64            `yaml:"initial_node_count" json:"initial_node_count"`
-	Autoscaling     *AutoscalingConfig `yaml:"autoscaling,omitempty" json:"autoscaling,omitempty"`
-	AutoUpgrade     bool              `yaml:"auto_upgrade" json:"auto_upgrade"`
-	AutoRepair      bool              `yaml:"auto_repair" json:"auto_repair"`
-	ServiceAccount  string            `yaml:"service_account,omitempty" json:"service_account,omitempty"`
-	Labels          map[string]string `yaml:"labels,omitempty" json:"labels,omitempty"`
-	Taints          []string          `yaml:"taints,omitempty" json:"taints,omitempty"`
+	Name             string             `yaml:"name" json:"name"`
+	Version          string             `yaml:"version" json:"version"`
+	MachineType      string             `yaml:"machine_type" json:"machine_type"`
+	DiskSizeGB       int64              `yaml:"disk_size_gb" json:"disk_size_gb"`
+	DiskType         string             `yaml:"disk_type,omitempty" json:"disk_type,omitempty"`
+	ImageType        string             `yaml:"image_type" json:"image_type"`
+	InitialNodeCount int64              `yaml:"initial_node_count" json:"initial_node_count"`
+	Autoscaling      *AutoscalingConfig `yaml:"autoscaling,omitempty" json:"autoscaling,omitempty"`
+	AutoUpgrade      bool               `yaml:"auto_upgrade" json:"auto_upgrade"`
+	AutoRepair       bool               `yaml:"auto_repair" json:"auto_repair"`
+	ServiceAccount   string             `yaml:"service_account,omitempty" json:"service_account,omitempty"`
+	Labels           map[string]string  `yaml:"labels,omitempty" json:"labels,omitempty"`
+	Taints           []string           `yaml:"taints,omitempty" json:"taints,omitempty"`
 }
 
 // AutoscalingConfig holds autoscaling settings
@@ -103,9 +103,9 @@ type MaintenanceWindow struct {
 
 // AddonsConfig holds cluster addon configuration
 type AddonsConfig struct {
-	HTTPLoadBalancing bool `yaml:"http_load_balancing" json:"http_load_balancing"`
+	HTTPLoadBalancing        bool `yaml:"http_load_balancing" json:"http_load_balancing"`
 	HorizontalPodAutoscaling bool `yaml:"horizontal_pod_autoscaling" json:"horizontal_pod_autoscaling"`
-	NetworkPolicy     bool `yaml:"network_policy" json:"network_policy"`
+	NetworkPolicy            bool `yaml:"network_policy" json:"network_policy"`
 }
 
 // Analyzer performs drift analysis on GKE clusters
@@ -347,15 +347,15 @@ func extractNodePools(cluster *container.Cluster) []*NodePoolConfig {
 // AnalyzeDrift compares discovered clusters against a baseline and generates a drift report
 func (a *Analyzer) AnalyzeDrift(clusters []*ClusterInstance, baseline *ClusterConfig, nodePoolBaseline *NodePoolConfig) *DriftReport {
 	report := &DriftReport{
-		Timestamp:      time.Now(),
-		TotalClusters:  len(clusters),
-		Instances:      make([]*ClusterDrift, 0),
+		Timestamp:     time.Now(),
+		TotalClusters: len(clusters),
+		Instances:     make([]*ClusterDrift, 0),
 	}
 
 	for _, cluster := range clusters {
 		drift := a.analyzeCluster(cluster, baseline, nodePoolBaseline)
 		report.Instances = append(report.Instances, drift)
-		
+
 		if len(drift.Drifts) > 0 {
 			report.DriftedClusters++
 		}
@@ -480,8 +480,8 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 
 	// IP Allocation Policy
 	if baseline.IPAllocationPolicy != nil && actual.IPAllocationPolicy != nil {
-		if baseline.IPAllocationPolicy.StackType != "" && 
-		   actual.IPAllocationPolicy.StackType != baseline.IPAllocationPolicy.StackType {
+		if baseline.IPAllocationPolicy.StackType != "" &&
+			actual.IPAllocationPolicy.StackType != baseline.IPAllocationPolicy.StackType {
 			drift.Drifts = append(drift.Drifts, Drift{
 				Field:    "cluster.ip_allocation_policy.stack_type",
 				Expected: baseline.IPAllocationPolicy.StackType,

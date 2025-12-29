@@ -16,13 +16,13 @@ type DriftReport struct {
 
 // ClusterDrift represents drift analysis results for a single GKE cluster
 type ClusterDrift struct {
-	Project   string              `json:"project" yaml:"project"`
-	Name      string              `json:"name" yaml:"name"`
-	Location  string              `json:"location" yaml:"location"`
-	Status    string              `json:"status" yaml:"status"`
-	Labels    map[string]string   `json:"labels,omitempty" yaml:"labels,omitempty"`
-	NodePools []*NodePoolConfig   `json:"node_pools,omitempty" yaml:"node_pools,omitempty"`
-	Drifts    []Drift             `json:"drifts" yaml:"drifts"`
+	Project   string            `json:"project" yaml:"project"`
+	Name      string            `json:"name" yaml:"name"`
+	Location  string            `json:"location" yaml:"location"`
+	Status    string            `json:"status" yaml:"status"`
+	Labels    map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
+	NodePools []*NodePoolConfig `json:"node_pools,omitempty" yaml:"node_pools,omitempty"`
+	Drifts    []Drift           `json:"drifts" yaml:"drifts"`
 }
 
 // Drift represents a single configuration difference from the baseline
@@ -43,9 +43,9 @@ func (r *DriftReport) FormatText() string {
 	sb.WriteString(fmt.Sprintf("Generated: %s\n", r.Timestamp.Format(time.RFC3339)))
 	sb.WriteString(fmt.Sprintf("Total Clusters: %d\n", r.TotalClusters))
 	sb.WriteString(fmt.Sprintf("Clusters with Drift: %d\n", r.DriftedClusters))
-	
+
 	if r.TotalClusters > 0 {
-		sb.WriteString(fmt.Sprintf("Compliance Rate: %.1f%%\n\n", 
+		sb.WriteString(fmt.Sprintf("Compliance Rate: %.1f%%\n\n",
 			float64(r.TotalClusters-r.DriftedClusters)/float64(r.TotalClusters)*100))
 	}
 
@@ -128,7 +128,7 @@ func (cd *ClusterDrift) FormatText() string {
 		sb.WriteString("[OK] No drift detected\n")
 	} else {
 		sb.WriteString(fmt.Sprintf("Detected Drifts: %d\n\n", len(cd.Drifts)))
-		
+
 		for _, drift := range cd.Drifts {
 			icon := getIconForSeverity(drift.Severity)
 			sb.WriteString(fmt.Sprintf("  %s [%s] %s\n", icon, strings.ToUpper(drift.Severity), drift.Field))

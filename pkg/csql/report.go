@@ -45,7 +45,7 @@ func (r *DriftReport) FormatText() string {
 	sb.WriteString(fmt.Sprintf("Generated: %s\n", r.Timestamp.Format(time.RFC3339)))
 	sb.WriteString(fmt.Sprintf("Total Instances: %d\n", r.TotalInstances))
 	sb.WriteString(fmt.Sprintf("Instances with Drift: %d\n", r.DriftedInstances))
-	sb.WriteString(fmt.Sprintf("Compliance Rate: %.1f%%\n\n", 
+	sb.WriteString(fmt.Sprintf("Compliance Rate: %.1f%%\n\n",
 		float64(r.TotalInstances-r.DriftedInstances)/float64(r.TotalInstances)*100))
 
 	// Summary by severity
@@ -114,7 +114,7 @@ func (id *InstanceDrift) FormatText() string {
 	}
 
 	if id.MaintenanceWindow != nil {
-		sb.WriteString(fmt.Sprintf("Maintenance Window: Day %d, Hour %d UTC (%s)\n", 
+		sb.WriteString(fmt.Sprintf("Maintenance Window: Day %d, Hour %d UTC (%s)\n",
 			id.MaintenanceWindow.Day, id.MaintenanceWindow.Hour, id.MaintenanceWindow.UpdateTrack))
 	}
 
@@ -124,7 +124,7 @@ func (id *InstanceDrift) FormatText() string {
 		sb.WriteString("[OK] No drift detected\n")
 	} else {
 		sb.WriteString(fmt.Sprintf("Detected Drifts: %d\n\n", len(id.Drifts)))
-		
+
 		for _, drift := range id.Drifts {
 			icon := getIconForSeverity(drift.Severity)
 			sb.WriteString(fmt.Sprintf("  %s [%s] %s\n", icon, strings.ToUpper(drift.Severity), drift.Field))

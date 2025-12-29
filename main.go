@@ -1,155 +1,155 @@
 package main
 
 import (
-"context"
-"flag"
-"fmt"
-"log"
-"os"
+	"context"
+	"flag"
+	"fmt"
+	"log"
+	"os"
 
-"github.com/yourusername/drift-analysis-cli/pkg/csql"
-"github.com/yourusername/drift-analysis-cli/pkg/gke"
-"gopkg.in/yaml.v3"
+	"github.com/yourusername/drift-analysis-cli/pkg/csql"
+	"github.com/yourusername/drift-analysis-cli/pkg/gke"
+	"gopkg.in/yaml.v3"
 )
 
 // UnifiedConfig represents the unified YAML configuration for both SQL and GKE
 type UnifiedConfig struct {
-Projects      []string          `yaml:"projects"`
-SQLBaselines  []csql.SQLBaseline  `yaml:"sql_baselines,omitempty"`
-GKEBaselines  []gke.GKEBaseline   `yaml:"gke_baselines,omitempty"`
+	Projects     []string           `yaml:"projects"`
+	SQLBaselines []csql.SQLBaseline `yaml:"sql_baselines,omitempty"`
+	GKEBaselines []gke.GKEBaseline  `yaml:"gke_baselines,omitempty"`
 
-// Legacy support
-Baselines    []csql.SQLBaseline  `yaml:"baselines,omitempty"`
+	// Legacy support
+	Baselines []csql.SQLBaseline `yaml:"baselines,omitempty"`
 }
 
 func main() {
-if len(os.Args) < 2 {
-printUsage()
-os.Exit(1)
-}
+	if len(os.Args) < 2 {
+		printUsage()
+		os.Exit(1)
+	}
 
-command := os.Args[1]
+	command := os.Args[1]
 
-switch command {
-case "sql":
-runSQLCommand(os.Args[2:])
-case "gke":
-runGKECommand(os.Args[2:])
-case "help", "-h", "--help":
-printUsage()
-default:
-fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", command)
-printUsage()
-os.Exit(1)
-}
+	switch command {
+	case "sql":
+		runSQLCommand(os.Args[2:])
+	case "gke":
+		runGKECommand(os.Args[2:])
+	case "help", "-h", "--help":
+		printUsage()
+	default:
+		fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", command)
+		printUsage()
+		os.Exit(1)
+	}
 }
 
 func runSQLCommand(args []string) {
-fs := flag.NewFlagSet("sql", flag.ExitOnError)
+	fs := flag.NewFlagSet("sql", flag.ExitOnError)
 
-projects := fs.String("projects", "", "Comma-separated list of GCP project IDs")
-config := fs.String("config", "", "Path to unified YAML config file")
-output := fs.String("output", "", "Output file path (default: stdout)")
-format := fs.String("format", "text", "Output format: text, json, yaml")
-filterRole := fs.String("filter-role", "", "Filter by database-role label")
-generateConfig := fs.Bool("generate-config", false, "Generate baseline config from current state")
+	projects := fs.String("projects", "", "Comma-separated list of GCP project IDs")
+	config := fs.String("config", "", "Path to unified YAML config file")
+	output := fs.String("output", "", "Output file path (default: stdout)")
+	format := fs.String("format", "text", "Output format: text, json, yaml")
+	filterRole := fs.String("filter-role", "", "Filter by database-role label")
+	generateConfig := fs.Bool("generate-config", false, "Generate baseline config from current state")
 
-fs.Parse(args)
+	fs.Parse(args)
 
-ctx := context.Background()
+	ctx := context.Background()
 
-// Load unified config if provided
-var projectList []string
-var baselines []csql.SQLBaseline
+	// Load unified config if provided
+	var projectList []string
+	var baselines []csql.SQLBaseline
 
-if *config != "" {
-unifiedConfig, err := loadUnifiedConfig(*config)
-if err != nil {
-log.Fatalf("Failed to load config: %v", err)
-}
-projectList = unifiedConfig.Projects
+	if *config != "" {
+		unifiedConfig, err := loadUnifiedConfig(*config)
+		if err != nil {
+			log.Fatalf("Failed to load config: %v", err)
+		}
+		projectList = unifiedConfig.Projects
 
-// Use sql_baselines if present, otherwise fall back to baselines (legacy)
-if len(unifiedConfig.SQLBaselines) > 0 {
-baselines = unifiedConfig.SQLBaselines
-} else if len(unifiedConfig.Baselines) > 0 {
-baselines = unifiedConfig.Baselines
-}
-}
+		// Use sql_baselines if present, otherwise fall back to baselines (legacy)
+		if len(unifiedConfig.SQLBaselines) > 0 {
+			baselines = unifiedConfig.SQLBaselines
+		} else if len(unifiedConfig.Baselines) > 0 {
+			baselines = unifiedConfig.Baselines
+		}
+	}
 
-cmd := &csql.Command{
-Projects:       *projects,
-ProjectList:    projectList,
-Baselines:      baselines,
-OutputFile:     *output,
-Format:         *format,
-FilterRole:     *filterRole,
-GenerateConfig: *generateConfig,
-}
+	cmd := &csql.Command{
+		Projects:       *projects,
+		ProjectList:    projectList,
+		Baselines:      baselines,
+		OutputFile:     *output,
+		Format:         *format,
+		FilterRole:     *filterRole,
+		GenerateConfig: *generateConfig,
+	}
 
-if err := cmd.Execute(ctx); err != nil {
-log.Fatalf("Error: %v", err)
-}
+	if err := cmd.Execute(ctx); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }
 
 func runGKECommand(args []string) {
-fs := flag.NewFlagSet("gke", flag.ExitOnError)
+	fs := flag.NewFlagSet("gke", flag.ExitOnError)
 
-projects := fs.String("projects", "", "Comma-separated list of GCP project IDs")
-config := fs.String("config", "", "Path to unified YAML config file")
-output := fs.String("output", "", "Output file path (default: stdout)")
-format := fs.String("format", "text", "Output format: text, json, yaml")
-filterRole := fs.String("filter-role", "", "Filter by cluster-role label")
-generateConfig := fs.Bool("generate-config", false, "Generate baseline config from current state")
+	projects := fs.String("projects", "", "Comma-separated list of GCP project IDs")
+	config := fs.String("config", "", "Path to unified YAML config file")
+	output := fs.String("output", "", "Output file path (default: stdout)")
+	format := fs.String("format", "text", "Output format: text, json, yaml")
+	filterRole := fs.String("filter-role", "", "Filter by cluster-role label")
+	generateConfig := fs.Bool("generate-config", false, "Generate baseline config from current state")
 
-fs.Parse(args)
+	fs.Parse(args)
 
-ctx := context.Background()
+	ctx := context.Background()
 
-// Load unified config if provided
-var projectList []string
-var baselines []gke.GKEBaseline
+	// Load unified config if provided
+	var projectList []string
+	var baselines []gke.GKEBaseline
 
-if *config != "" {
-unifiedConfig, err := loadUnifiedConfig(*config)
-if err != nil {
-log.Fatalf("Failed to load config: %v", err)
-}
-projectList = unifiedConfig.Projects
-baselines = unifiedConfig.GKEBaselines
-}
+	if *config != "" {
+		unifiedConfig, err := loadUnifiedConfig(*config)
+		if err != nil {
+			log.Fatalf("Failed to load config: %v", err)
+		}
+		projectList = unifiedConfig.Projects
+		baselines = unifiedConfig.GKEBaselines
+	}
 
-cmd := &gke.Command{
-Projects:       *projects,
-ProjectList:    projectList,
-Baselines:      baselines,
-OutputFile:     *output,
-Format:         *format,
-FilterRole:     *filterRole,
-GenerateConfig: *generateConfig,
-}
+	cmd := &gke.Command{
+		Projects:       *projects,
+		ProjectList:    projectList,
+		Baselines:      baselines,
+		OutputFile:     *output,
+		Format:         *format,
+		FilterRole:     *filterRole,
+		GenerateConfig: *generateConfig,
+	}
 
-if err := cmd.Execute(ctx); err != nil {
-log.Fatalf("Error: %v", err)
-}
+	if err := cmd.Execute(ctx); err != nil {
+		log.Fatalf("Error: %v", err)
+	}
 }
 
 func loadUnifiedConfig(path string) (*UnifiedConfig, error) {
-data, err := os.ReadFile(path)
-if err != nil {
-return nil, err
-}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
 
-var config UnifiedConfig
-if err := yaml.Unmarshal(data, &config); err != nil {
-return nil, err
-}
+	var config UnifiedConfig
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		return nil, err
+	}
 
-return &config, nil
+	return &config, nil
 }
 
 func printUsage() {
-fmt.Println(`GCP Drift Analysis CLI
+	fmt.Println(`GCP Drift Analysis CLI
 
 Usage:
   drift-analysis-cli <command> [flags]
@@ -225,6 +225,5 @@ Unified Config Format (config.yaml):
       cluster_config:
         # GKE cluster configuration
       nodepool_config:
-        # Node pool configuration
-`)
+        # Node pool configuration`)
 }

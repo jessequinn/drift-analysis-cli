@@ -3,6 +3,7 @@
 
 # But include source code and config files
 !.gitignore
+!.golangci.yml
 !*.go
 !go.mod
 !go.sum
@@ -13,6 +14,8 @@
 # Include directories
 !pkg/
 !pkg/**
+!.github/
+!.github/**
 
 # Exclude build artifacts and local config
 drift-analysis-cli
