@@ -147,6 +147,19 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 	fmt.Printf("  Roles: %d\n", len(currentSchema.Roles))
 	fmt.Printf("  Extensions: %d\n\n", len(currentSchema.Extensions))
 
+	// Validate against baseline if configured
+	if conn.SchemaBaseline != nil {
+		fmt.Println("Validating against schema baseline...")
+		validationResult := sql.ValidateSchemaAgainstBaseline(currentSchema, conn.SchemaBaseline)
+		
+		if validationResult.HasDrift {
+			fmt.Println("\n[WARNING] Schema drift detected!\n")
+			fmt.Println(sql.FormatValidationResult(validationResult))
+		} else {
+			fmt.Println("[OK] Database matches baseline expectations\n")
+		}
+	}
+
 	// Generate output based on format
 	if err := generateOutput(currentSchema, conn.Name, outputFormat, outputDir); err != nil {
 		return fmt.Errorf("failed to generate output: %w", err)
@@ -343,6 +356,27 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 		fmt.Printf("    Views: %d\n", len(schema.Views))
 		fmt.Printf("    Roles: %d\n", len(schema.Roles))
 		fmt.Printf("    Extensions: %d\n", len(schema.Extensions))
+
+		// Validate against baseline if configured
+		if conn.SchemaBaseline != nil {
+			validationResult := sql.ValidateSchemaAgainstBaseline(schema, conn.SchemaBaseline)
+			
+			if validationResult.HasDrift {
+				fmt.Printf("    [WARNING] Schema drift detected!\n")
+				// Print summary only
+				if len(validationResult.CountMismatches) > 0 {
+					fmt.Printf("      Count mismatches: %d\n", len(validationResult.CountMismatches))
+				}
+				if len(validationResult.MissingObjects) > 0 {
+					fmt.Printf("      Missing objects: %d\n", len(validationResult.MissingObjects))
+				}
+				if len(validationResult.ForbiddenObjects) > 0 {
+					fmt.Printf("      Forbidden objects: %d\n", len(validationResult.ForbiddenObjects))
+				}
+			} else {
+				fmt.Printf("    [OK] Matches baseline\n")
+			}
+		}
 
 		// Save to cache
 		if err := cache.Save(conn.GetConnectionName(), conn.Database, schema); err != nil {

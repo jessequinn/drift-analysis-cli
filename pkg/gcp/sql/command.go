@@ -60,6 +60,31 @@ type DatabaseConnection struct {
 	
 	// SSH Tunnel configuration (for bastion/jump host access)
 	SSHTunnel *SSHTunnelConfig `yaml:"ssh_tunnel,omitempty"`
+	
+	// Schema baseline expectations for drift detection
+	SchemaBaseline *SchemaBaseline `yaml:"schema_baseline,omitempty"`
+}
+
+// SchemaBaseline defines expected schema counts and specific objects
+type SchemaBaseline struct {
+	// Expected counts
+	ExpectedTables     *int     `yaml:"expected_tables,omitempty"`
+	ExpectedViews      *int     `yaml:"expected_views,omitempty"`
+	ExpectedSequences  *int     `yaml:"expected_sequences,omitempty"`
+	ExpectedFunctions  *int     `yaml:"expected_functions,omitempty"`
+	ExpectedProcedures *int     `yaml:"expected_procedures,omitempty"`
+	ExpectedRoles      *int     `yaml:"expected_roles,omitempty"`
+	ExpectedExtensions *int     `yaml:"expected_extensions,omitempty"`
+	
+	// Required objects (must exist)
+	RequiredTables     []string `yaml:"required_tables,omitempty"`
+	RequiredViews      []string `yaml:"required_views,omitempty"`
+	RequiredFunctions  []string `yaml:"required_functions,omitempty"`
+	RequiredProcedures []string `yaml:"required_procedures,omitempty"`
+	RequiredExtensions []string `yaml:"required_extensions,omitempty"`
+	
+	// Forbidden objects (must not exist)
+	ForbiddenTables []string `yaml:"forbidden_tables,omitempty"`
 }
 
 // SSHTunnelConfig defines SSH tunnel configuration for accessing private databases

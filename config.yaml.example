@@ -103,6 +103,35 @@ database_connections:
       remote_port: 5432                          # Remote PostgreSQL port
       use_iap: true                              # Use Identity-Aware Proxy
       ssh_key_expiry: "1h"                       # SSH key expiration
+    
+    # Schema baseline expectations for drift detection
+    schema_baseline:
+      # Expected object counts
+      expected_tables: 50
+      expected_views: 5
+      expected_sequences: 10
+      expected_functions: 8
+      expected_procedures: 3
+      expected_roles: 15
+      expected_extensions: 3
+      
+      # Required objects (must exist)
+      required_tables:
+        - "public.users"
+        - "public.orders"
+        - "public.products"
+      
+      required_views:
+        - "public.user_summary"
+      
+      required_extensions:
+        - "uuid-ossp"
+        - "pg_trgm"
+        - "pgcrypto"
+      
+      # Forbidden objects (must not exist)
+      forbidden_tables:
+        - "public.temp_debug_table"
   
   # Staging database (example without SSH tunnel)
   - name: "staging-app-db"
