@@ -21,7 +21,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
           cache: true
 
       - name: golangci-lint
@@ -29,7 +29,7 @@ jobs:
         with:
           version: latest
           args: --timeout=5m
-          go-version: '1.25'
+          go-version: '1.23'
 
   security:
     name: Security Scan
@@ -41,7 +41,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
           cache: true
 
       - name: Run govulncheck
@@ -89,7 +89,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
           cache: true
 
       - name: Build binary for SBOM
@@ -122,7 +122,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        go-version: ['1.25']
+        go-version: ['1.23']
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -167,7 +167,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
           cache: true
 
       - name: Build binary
@@ -198,7 +198,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.25'
+          go-version: '1.23'
           cache: true
 
       - name: Check formatting

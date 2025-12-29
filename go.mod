@@ -1,6 +1,6 @@
 module github.com/yourusername/drift-analysis-cli
 
-go 1.25
+go 1.24.0
 
 require (
 	google.golang.org/api v0.258.0

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"time"
+
+	"github.com/yourusername/drift-analysis-cli/pkg/report"
 )
 
 // DriftReport contains the complete analysis results for all clusters
@@ -26,12 +28,7 @@ type ClusterDrift struct {
 }
 
 // Drift represents a single configuration difference from the baseline
-type Drift struct {
-	Field    string `json:"field" yaml:"field"`
-	Expected string `json:"expected" yaml:"expected"`
-	Actual   string `json:"actual" yaml:"actual"`
-	Severity string `json:"severity" yaml:"severity"`
-}
+type Drift = report.Drift
 
 // FormatText generates a human-readable text report
 func (r *DriftReport) FormatText() string {
@@ -51,22 +48,7 @@ func (r *DriftReport) FormatText() string {
 
 	// Summary by severity
 	criticalCount, highCount, mediumCount, lowCount := r.countBySeverity()
-	if criticalCount+highCount+mediumCount+lowCount > 0 {
-		sb.WriteString("Drift Summary:\n")
-		if criticalCount > 0 {
-			sb.WriteString(fmt.Sprintf("  [!] CRITICAL: %d\n", criticalCount))
-		}
-		if highCount > 0 {
-			sb.WriteString(fmt.Sprintf("  [!] HIGH:     %d\n", highCount))
-		}
-		if mediumCount > 0 {
-			sb.WriteString(fmt.Sprintf("  [*] MEDIUM:   %d\n", mediumCount))
-		}
-		if lowCount > 0 {
-			sb.WriteString(fmt.Sprintf("  [-] LOW:      %d\n", lowCount))
-		}
-		sb.WriteString("\n")
-	}
+	sb.WriteString(report.FormatDriftSummary(criticalCount, highCount, mediumCount, lowCount))
 
 	// Detailed cluster reports
 	for i, cluster := range r.Instances {
@@ -123,36 +105,7 @@ func (cd *ClusterDrift) FormatText() string {
 	}
 
 	sb.WriteString("\n")
-
-	if len(cd.Drifts) == 0 {
-		sb.WriteString("[OK] No drift detected\n")
-	} else {
-		sb.WriteString(fmt.Sprintf("Detected Drifts: %d\n\n", len(cd.Drifts)))
-
-		for _, drift := range cd.Drifts {
-			icon := getIconForSeverity(drift.Severity)
-			sb.WriteString(fmt.Sprintf("  %s [%s] %s\n", icon, strings.ToUpper(drift.Severity), drift.Field))
-			sb.WriteString(fmt.Sprintf("     Expected: %s\n", drift.Expected))
-			sb.WriteString(fmt.Sprintf("     Actual:   %s\n", drift.Actual))
-			sb.WriteString("\n")
-		}
-	}
+	sb.WriteString(report.FormatDrifts(cd.Drifts))
 
 	return sb.String()
-}
-
-// getIconForSeverity returns an appropriate text marker for the severity level
-func getIconForSeverity(severity string) string {
-	switch severity {
-	case "critical":
-		return "[!]"
-	case "high":
-		return "[!]"
-	case "medium":
-		return "[*]"
-	case "low":
-		return "[-]"
-	default:
-		return "[ ]"
-	}
 }
