@@ -15,6 +15,22 @@ type SSHTunnelManager struct {
 	isConnected bool
 }
 
+// getFreePort finds an available port on localhost
+func getFreePort() (int, error) {
+	addr, err := net.ResolveTCPAddr("tcp", "localhost:0")
+	if err != nil {
+		return 0, err
+	}
+
+	listener, err := net.ListenTCP("tcp", addr)
+	if err != nil {
+		return 0, err
+	}
+	defer listener.Close()
+
+	return listener.Addr().(*net.TCPAddr).Port, nil
+}
+
 // NewSSHTunnelManager creates a new SSH tunnel manager
 func NewSSHTunnelManager(config *SSHTunnelConfig) (*SSHTunnelManager, error) {
 	if config == nil {
@@ -23,7 +39,12 @@ func NewSSHTunnelManager(config *SSHTunnelConfig) (*SSHTunnelManager, error) {
 	
 	// Set defaults
 	if config.LocalPort == 0 {
-		config.LocalPort = 5432
+		// Automatically find a free port
+		port, err := getFreePort()
+		if err != nil {
+			return nil, fmt.Errorf("failed to find free port: %w", err)
+		}
+		config.LocalPort = port
 	}
 	if config.RemotePort == 0 {
 		config.RemotePort = 5432
