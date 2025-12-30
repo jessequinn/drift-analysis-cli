@@ -369,18 +369,32 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 			
 			if validationResult.HasDrift {
 				fmt.Printf("    [WARNING] Schema drift detected!\n")
-				// Print summary only
+				// Print detailed mismatches
 				if len(validationResult.CountMismatches) > 0 {
-					fmt.Printf("      Count mismatches: %d\n", len(validationResult.CountMismatches))
+					fmt.Printf("      Count mismatches:\n")
+					for _, cm := range validationResult.CountMismatches {
+						fmt.Printf("        - %s: expected %d, got %d (diff: %+d)\n", 
+							cm.ObjectType, cm.Expected, cm.Actual, cm.Actual-cm.Expected)
+					}
 				}
 				if len(validationResult.MissingObjects) > 0 {
 					fmt.Printf("      Missing objects: %d\n", len(validationResult.MissingObjects))
+					for _, mo := range validationResult.MissingObjects {
+						fmt.Printf("        - %s: %s\n", mo.ObjectType, mo.Name)
+					}
 				}
 				if len(validationResult.ForbiddenObjects) > 0 {
 					fmt.Printf("      Forbidden objects: %d\n", len(validationResult.ForbiddenObjects))
+					for _, fo := range validationResult.ForbiddenObjects {
+						fmt.Printf("        - %s: %s\n", fo.ObjectType, fo.Name)
+					}
 				}
 				if len(validationResult.OwnershipViolations) > 0 {
 					fmt.Printf("      Ownership violations: %d\n", len(validationResult.OwnershipViolations))
+					for _, ov := range validationResult.OwnershipViolations {
+						fmt.Printf("        - %s %s: owned by '%s', expected '%s'\n", 
+							ov.ObjectType, ov.ObjectName, ov.ActualOwner, ov.ExpectedOwner)
+					}
 				}
 			} else {
 				fmt.Printf("    [OK] Matches baseline\n")
