@@ -226,6 +226,91 @@ gke_baselines:
       auto_repair: true
 
 # ============================================================================
+# GCE (Compute Engine) baselines
+# ============================================================================
+gce_baselines:
+  # Production VM instances
+  - name: "production-vms"
+    filter_labels:
+      env: "production"
+      instance-role: "app-server"
+    vm_config:
+      machine_type: n2-standard-4
+      disk_size_gb: 100
+      disk_type: pd-ssd
+      image_family: ubuntu-2204-jammy
+      image_project: ubuntu-os-cloud
+      
+      network_config:
+        network: default
+        subnetwork: default
+        external_ip: false          # No external IP for security
+        network_tier: PREMIUM
+      
+      service_account:
+        email: "app-sa@my-production-project.iam.gserviceaccount.com"
+        scopes:
+          - "https://www.googleapis.com/auth/logging.write"
+          - "https://www.googleapis.com/auth/monitoring.write"
+          - "https://www.googleapis.com/auth/cloud-platform"
+      
+      metadata:
+        enable-oslogin: "TRUE"
+        google-logging-enabled: "true"
+        google-monitoring-enabled: "true"
+      
+      tags:
+        - "http-server"
+        - "https-server"
+      
+      labels:
+        env: "production"
+        managed-by: "terraform"
+      
+      # High availability settings
+      preemptible: false
+      automatic_restart: true
+      on_host_maintenance: "MIGRATE"
+      deletion_protection: true
+      
+      # Security settings
+      shielded_vm:
+        enable_secure_boot: true
+        enable_vtpm: true
+        enable_integrity_monitoring: true
+
+  # Development/staging instances
+  - name: "development-vms"
+    filter_labels:
+      env: "development"
+    vm_config:
+      machine_type: e2-medium
+      disk_size_gb: 50
+      disk_type: pd-standard
+      image_family: ubuntu-2204-jammy
+      
+      network_config:
+        external_ip: false
+      
+      service_account:
+        email: "dev-sa@my-production-project.iam.gserviceaccount.com"
+        scopes:
+          - "https://www.googleapis.com/auth/cloud-platform"
+      
+      metadata:
+        enable-oslogin: "TRUE"
+      
+      preemptible: true              # OK for dev environments
+      automatic_restart: false
+      on_host_maintenance: "TERMINATE"
+      deletion_protection: false
+      
+      shielded_vm:
+        enable_secure_boot: false
+        enable_vtpm: true
+        enable_integrity_monitoring: true
+
+# ============================================================================
 # Usage Examples
 # ============================================================================
 #
