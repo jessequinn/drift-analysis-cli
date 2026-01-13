@@ -11,20 +11,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var sqlOutputFormat string
-
 // sqlCmd represents the sql command
 var sqlCmd = &cobra.Command{
 	Use:   "sql",
 	Short: "Analyze Cloud SQL instances for configuration drift",
 	Long: `Analyze Google Cloud SQL instances against baseline configurations.
 Compares database flags, settings, backups, and more.`,
-	RunE: runSQLAnalysis,
+	RunE:         runSQLAnalysis,
+	SilenceUsage: true, // Don't show usage on runtime errors
 }
 
 func init() {
 	gcpCmd.AddCommand(sqlCmd)
-	sqlCmd.Flags().StringVarP(&sqlOutputFormat, "output", "o", "text", "output format (text|json|yaml|tui)")
 }
 
 func runSQLAnalysis(cmd *cobra.Command, args []string) error {
@@ -89,7 +87,7 @@ func runSQLAnalysis(cmd *cobra.Command, args []string) error {
 		report := analyzer.AnalyzeDrift(instances, baseline.Config)
 
 		// Output report
-		switch sqlOutputFormat {
+		switch outputFormat {
 		case "tui":
 			// Convert to TUI format and run interactive display
 			tuiData := tui.FromSQLReport(report)

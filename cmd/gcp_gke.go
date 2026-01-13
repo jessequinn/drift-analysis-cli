@@ -11,20 +11,18 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-var gkeOutputFormat string
-
 // gkeCmd represents the gke command
 var gkeCmd = &cobra.Command{
 	Use:   "gke",
 	Short: "Analyze GKE clusters for configuration drift",
 	Long: `Analyze Google Kubernetes Engine clusters against baseline configurations.
 Compares cluster settings, node pool configurations, networking, and security settings.`,
-	RunE: runGKEAnalysis,
+	RunE:         runGKEAnalysis,
+	SilenceUsage: true, // Don't show usage on runtime errors
 }
 
 func init() {
 	gcpCmd.AddCommand(gkeCmd)
-	gkeCmd.Flags().StringVarP(&gkeOutputFormat, "output", "o", "text", "output format (text|json|yaml|tui)")
 }
 
 func runGKEAnalysis(cmd *cobra.Command, args []string) error {
@@ -89,7 +87,7 @@ func runGKEAnalysis(cmd *cobra.Command, args []string) error {
 		report := analyzer.AnalyzeDrift(clusters, baseline.ClusterConfig, baseline.NodePoolConfig)
 
 		// Output report
-		switch gkeOutputFormat {
+		switch outputFormat {
 		case "tui":
 			// Convert to TUI format and run interactive display
 			tuiData := tui.FromGKEReport(report)

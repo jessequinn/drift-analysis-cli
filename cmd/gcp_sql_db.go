@@ -19,7 +19,7 @@ var (
 	listConnections  bool
 	cacheDir         string
 	inspectAll       bool
-	outputFormat     string
+	dbOutputFormat     string
 	outputDir        string
 )
 
@@ -44,18 +44,19 @@ Examples:
 
   # List all database connections in config
   drift-analysis-cli sql db -config config.yaml --list`,
-	RunE: runSQLDb,
+	RunE:         runSQLDb,
+	SilenceUsage: true, // Don't show usage on runtime errors
 }
 
 func init() {
 	sqlCmd.AddCommand(sqlDbCmd)
-	
+
 	sqlDbCmd.Flags().StringVarP(&dbConnectionName, "connection", "c", "", "database connection name from config")
 	sqlDbCmd.Flags().BoolVar(&compareWithCache, "compare", false, "compare current schema with cached baseline")
 	sqlDbCmd.Flags().BoolVar(&listConnections, "list", false, "list all database connections in config")
 	sqlDbCmd.Flags().StringVar(&cacheDir, "cache-dir", "", "cache directory (default: .drift-cache/database-schemas)")
 	sqlDbCmd.Flags().BoolVar(&inspectAll, "all", false, "inspect all database connections in config")
-	sqlDbCmd.Flags().StringVarP(&outputFormat, "format", "f", "summary", "output format: summary|full|ddl|json|yaml")
+	sqlDbCmd.Flags().StringVarP(&dbOutputFormat, "format", "f", "summary", "output format: summary|full|ddl|json|yaml")
 	sqlDbCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "output directory for generated files (default: current directory)")
 }
 
@@ -154,7 +155,7 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 	if conn.SchemaBaseline != nil {
 		fmt.Println("Validating against schema baseline...")
 		validationResult := sql.ValidateSchemaAgainstBaseline(currentSchema, conn.SchemaBaseline)
-		
+
 		if validationResult.HasDrift {
 			fmt.Println("\n[WARNING] Schema drift detected!\n")
 			fmt.Println(sql.FormatValidationResult(validationResult))
@@ -164,7 +165,7 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 	}
 
 	// Generate output based on format
-	if err := generateOutput(currentSchema, conn.Name, outputFormat, outputDir); err != nil {
+	if err := generateOutput(currentSchema, conn.Name, dbOutputFormat, outputDir); err != nil {
 		return fmt.Errorf("failed to generate output: %w", err)
 	}
 
@@ -186,7 +187,7 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 		}
 
 		diff := sql.CompareSchemas(cachedSchema.Schema, currentSchema)
-		
+
 		if !diff.HasChanges() {
 			fmt.Println("\nNo schema changes detected!")
 			return nil
@@ -210,7 +211,7 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 		if err := cache.Save(conn.GetConnectionName(), conn.Database, currentSchema); err != nil {
 			return fmt.Errorf("failed to save cache: %w", err)
 		}
-		
+
 		if cacheExists {
 			fmt.Println("Cache updated")
 		} else {
@@ -366,14 +367,14 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 		// Validate against baseline if configured
 		if conn.SchemaBaseline != nil {
 			validationResult := sql.ValidateSchemaAgainstBaseline(schema, conn.SchemaBaseline)
-			
+
 			if validationResult.HasDrift {
 				fmt.Printf("    [WARNING] Schema drift detected!\n")
 				// Print detailed mismatches
 				if len(validationResult.CountMismatches) > 0 {
 					fmt.Printf("      Count mismatches:\n")
 					for _, cm := range validationResult.CountMismatches {
-						fmt.Printf("        - %s: expected %d, got %d (diff: %+d)\n", 
+						fmt.Printf("        - %s: expected %d, got %d (diff: %+d)\n",
 							cm.ObjectType, cm.Expected, cm.Actual, cm.Actual-cm.Expected)
 					}
 				}
@@ -392,7 +393,7 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 				if len(validationResult.OwnershipViolations) > 0 {
 					fmt.Printf("      Ownership violations: %d\n", len(validationResult.OwnershipViolations))
 					for _, ov := range validationResult.OwnershipViolations {
-						fmt.Printf("        - %s %s: owned by '%s', expected '%s'\n", 
+						fmt.Printf("        - %s %s: owned by '%s', expected '%s'\n",
 							ov.ObjectType, ov.ObjectName, ov.ActualOwner, ov.ExpectedOwner)
 					}
 				}
@@ -407,7 +408,7 @@ func inspectAllConnections(ctx context.Context, cfg *sql.Config) error {
 		}
 
 		// Generate output
-		if err := generateOutput(schema, conn.Name, outputFormat, outputDir); err != nil {
+		if err := generateOutput(schema, conn.Name, dbOutputFormat, outputDir); err != nil {
 			fmt.Printf("  WARNING: Failed to generate output: %v\n", err)
 		}
 
@@ -510,7 +511,7 @@ func generateFullReport(schema *sql.DatabaseSchema) string {
 			sb.WriteString(fmt.Sprintf("  Rows:       %d (estimated)\n", table.RowCount))
 			sb.WriteString(fmt.Sprintf("  Size:       %d bytes\n", table.SizeBytes))
 			sb.WriteString(fmt.Sprintf("  Columns:    %d\n", len(table.Columns)))
-			
+
 			// Columns
 			if len(table.Columns) > 0 {
 				sb.WriteString("\n  Columns:\n")
@@ -576,7 +577,7 @@ func writeOutput(connectionName string, filename string, content string, outputD
 	// Sanitize connection name for filename
 	safeName := strings.ReplaceAll(connectionName, ":", "_")
 	safeName = strings.ReplaceAll(safeName, "/", "_")
-	
+
 	// Construct filename with connection name prefix
 	baseFilename := strings.TrimSuffix(filename, filepath.Ext(filename))
 	ext := filepath.Ext(filename)

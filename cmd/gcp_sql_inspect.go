@@ -11,12 +11,12 @@ import (
 
 var (
 	// Direct connection
-	inspectHost     string
-	inspectPort     int
-	
+	inspectHost string
+	inspectPort int
+
 	// Cloud SQL connection
 	inspectInstance string
-	
+
 	// Common fields
 	inspectUser     string
 	inspectPassword string
@@ -42,26 +42,27 @@ Supports two connection methods:
 2. Direct connection: --host IP --port 5432
 
 This command requires database connection credentials.`,
-	RunE: runSQLInspect,
+	RunE:         runSQLInspect,
+	SilenceUsage: true, // Don't show usage on runtime errors
 }
 
 func init() {
 	sqlCmd.AddCommand(sqlInspectCmd)
-	
+
 	// Cloud SQL connection
 	sqlInspectCmd.Flags().StringVarP(&inspectInstance, "instance", "i", "", "Cloud SQL instance connection name (project:region:instance)")
-	
+
 	// Direct connection
 	sqlInspectCmd.Flags().StringVarP(&inspectHost, "host", "H", "", "database host (for direct connection)")
 	sqlInspectCmd.Flags().IntVarP(&inspectPort, "port", "P", 5432, "database port (for direct connection)")
-	
+
 	// Common flags
 	sqlInspectCmd.Flags().StringVarP(&inspectUser, "user", "u", "", "database user (required)")
 	sqlInspectCmd.Flags().StringVarP(&inspectPassword, "password", "p", "", "database password (required)")
 	sqlInspectCmd.Flags().StringVarP(&inspectDatabase, "database", "d", "postgres", "database name")
 	sqlInspectCmd.Flags().StringVarP(&inspectOutput, "output-file", "o", "", "output file (default: stdout)")
 	sqlInspectCmd.Flags().StringVarP(&inspectFormat, "format", "f", "report", "output format (report|ddl)")
-	
+
 	sqlInspectCmd.MarkFlagRequired("user")
 	sqlInspectCmd.MarkFlagRequired("password")
 }
