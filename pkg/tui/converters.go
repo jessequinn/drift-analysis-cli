@@ -1,6 +1,9 @@
 package tui
 
 import (
+	"fmt"
+
+	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/gce"
 	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/gke"
 	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/sql"
 )
@@ -72,5 +75,57 @@ func FromGKEReport(report *gke.DriftReport) ReportData {
 		TotalResources:   report.TotalClusters,
 		DriftedResources: report.DriftedClusters,
 		Items:            items,
+	}
+}
+
+// FromGCEReport converts a GCE drift report to TUI format
+func FromGCEReport(report *gce.DriftReport) ReportData {
+	items := make([]DriftItem, 0, len(report.Instances))
+
+	for _, instance := range report.Instances {
+		drifts := make([]DriftDetail, 0, len(instance.Drifts))
+		for _, d := range instance.Drifts {
+			drifts = append(drifts, DriftDetail{
+				Field:    d.Field,
+				Expected: formatValue(d.Expected),
+				Actual:   formatValue(d.Actual),
+				Severity: d.Severity,
+			})
+		}
+
+		items = append(items, DriftItem{
+			ResourceType: "GCE Instance",
+			Project:      instance.Project,
+			Name:         instance.Name,
+			Location:     instance.Zone,
+			State:        instance.Status,
+			Labels:       instance.Labels,
+			Drifts:       drifts,
+		})
+	}
+
+	return ReportData{
+		Title:            "GCP Compute Engine Drift Analysis Report",
+		Timestamp:        report.Timestamp,
+		TotalResources:   report.TotalInstances,
+		DriftedResources: report.DriftedInstances,
+		Items:            items,
+	}
+}
+
+// formatValue converts an interface{} to a string representation
+func formatValue(v interface{}) string {
+	switch val := v.(type) {
+	case string:
+		return val
+	case bool:
+		if val {
+			return "true"
+		}
+		return "false"
+	case nil:
+		return "<not set>"
+	default:
+		return fmt.Sprintf("%v", v)
 	}
 }
