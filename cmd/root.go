@@ -10,10 +10,10 @@ import (
 )
 
 var (
-	cfgFile     string
-	logFile     string
+	cfgFile      string
+	logFile      string
 	outputFormat string
-	jsonLogs    bool
+	jsonLogs     bool
 )
 
 // rootCmd represents the base command
@@ -27,7 +27,7 @@ comparing actual resource configurations against defined baselines.`,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		// Initialize logger
 		logWriter := io.Writer(os.Stderr)
-		
+
 		// If log file specified, write to both file and stderr
 		if logFile != "" {
 			file, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
@@ -38,7 +38,7 @@ comparing actual resource configurations against defined baselines.`,
 				// Don't defer file.Close() here - let it live for the whole run
 			}
 		}
-		
+
 		logLevel := logger.LevelInfo
 		logger.InitLogger(logWriter, jsonLogs, logLevel)
 	},

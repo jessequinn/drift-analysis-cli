@@ -19,7 +19,7 @@ var (
 	listConnections  bool
 	cacheDir         string
 	inspectAll       bool
-	dbOutputFormat     string
+	dbOutputFormat   string
 	outputDir        string
 )
 

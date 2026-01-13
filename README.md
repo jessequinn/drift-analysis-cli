@@ -110,164 +110,164 @@ Create a `config.yaml` file with your baselines:
 ```yaml
 # Projects to scan
 projects:
-  - my-project-1
-  - my-project-2
+ - my-project-1
+ - my-project-2
 
 # Cloud SQL baselines
 sql_baselines:
-  - name: "application"
-    filter_labels:
-      database-role: "application"
-    config:
-      database_version: POSTGRES_15
-      tier: db-custom-4-16384
-      disk_size_gb: 100
-      disk_type: PD_SSD
-      
-      required_databases:
-        - app_db
-        - postgres
-      
-      database_flags:
-        cloudsql.iam_authentication: "on"
-        max_connections: "200"
-        log_min_duration_statement: "1000"
-      
-      settings:
-        availability_type: REGIONAL
-        backup_enabled: true
-        backup_retention_days: 7
-        point_in_time_recovery: true
-        transaction_log_retention_days: 7
-      
-      ip_configuration:
-        ipv4_enabled: false
-        require_ssl: true
-        authorized_networks:
-          - "10.0.0.0/24"
-      
-      insights_config:
-        query_insights_enabled: true
+ - name: "application"
+ filter_labels:
+ database-role: "application"
+ config:
+ database_version: POSTGRES_15
+ tier: db-custom-4-16384
+ disk_size_gb: 100
+ disk_type: PD_SSD
+
+ required_databases:
+ - app_db
+ - postgres
+
+ database_flags:
+ cloudsql.iam_authentication: "on"
+ max_connections: "200"
+ log_min_duration_statement: "1000"
+
+ settings:
+ availability_type: REGIONAL
+ backup_enabled: true
+ backup_retention_days: 7
+ point_in_time_recovery: true
+ transaction_log_retention_days: 7
+
+ ip_configuration:
+ ipv4_enabled: false
+ require_ssl: true
+ authorized_networks:
+ - "10.0.0.0/24"
+
+ insights_config:
+ query_insights_enabled: true
 
 # GKE baselines
 gke_baselines:
-  - name: "production"
-    filter_labels:
-      cluster-role: "production"
-    cluster_config:
-      master_version: "1.33"
-      release_channel: REGULAR
-      private_cluster: true
-      master_global_access: true
-      datapath_provider: ADVANCED_DATAPATH
-      
-      master_authorized_networks:
-        - "10.0.0.0/24"
-      
-      ip_allocation_policy:
-        stack_type: IPV4_IPV6
-      
-      shielded_nodes: true
-      security_posture: BASIC
-      workload_identity: true
-      
-      logging_config:
-        enable_system_logs: true
-        enable_workload_logs: true
-      
-      monitoring_config:
-        enable_system_metrics: true
-        enable_apiserver_metrics: true
-      
-      nodepool_config:
-        machine_type: n2-standard-4
-        disk_size_gb: 100
-        disk_type: pd-ssd
-        image_type: COS_CONTAINERD
-        auto_upgrade: true
-        auto_repair: true
+ - name: "production"
+ filter_labels:
+ cluster-role: "production"
+ cluster_config:
+ master_version: "1.33"
+ release_channel: REGULAR
+ private_cluster: true
+ master_global_access: true
+ datapath_provider: ADVANCED_DATAPATH
+
+ master_authorized_networks:
+ - "10.0.0.0/24"
+
+ ip_allocation_policy:
+ stack_type: IPV4_IPV6
+
+ shielded_nodes: true
+ security_posture: BASIC
+ workload_identity: true
+
+ logging_config:
+ enable_system_logs: true
+ enable_workload_logs: true
+
+ monitoring_config:
+ enable_system_metrics: true
+ enable_apiserver_metrics: true
+
+ nodepool_config:
+ machine_type: n2-standard-4
+ disk_size_gb: 100
+ disk_type: pd-ssd
+ image_type: COS_CONTAINERD
+ auto_upgrade: true
+ auto_repair: true
 
 # GCE baselines
 gce_baselines:
-  - name: "production-vms"
-    filter_labels:
-      env: "production"
-      instance-role: "app-server"
-    vm_config:
-      machine_type: n2-standard-4
-      disk_size_gb: 100
-      disk_type: pd-ssd
-      image_family: ubuntu-2204-jammy
-      image_project: ubuntu-os-cloud
-      
-      network_config:
-        network: default
-        subnetwork: default
-        external_ip: false
-        network_tier: PREMIUM
-      
-      service_account:
-        email: "app-sa@project.iam.gserviceaccount.com"
-        scopes:
-          - "https://www.googleapis.com/auth/logging.write"
-          - "https://www.googleapis.com/auth/monitoring.write"
-      
-      metadata:
-        enable-oslogin: "TRUE"
-      
-      tags:
-        - "http-server"
-        - "https-server"
-      
-      preemptible: false
-      automatic_restart: true
-      on_host_maintenance: "MIGRATE"
-      deletion_protection: true
-      
-      shielded_vm:
-        enable_secure_boot: true
-        enable_vtpm: true
-        enable_integrity_monitoring: true
+ - name: "production-vms"
+ filter_labels:
+ env: "production"
+ instance-role: "app-server"
+ vm_config:
+ machine_type: n2-standard-4
+ disk_size_gb: 100
+ disk_type: pd-ssd
+ image_family: ubuntu-2204-jammy
+ image_project: ubuntu-os-cloud
+
+ network_config:
+ network: default
+ subnetwork: default
+ external_ip: false
+ network_tier: PREMIUM
+
+ service_account:
+ email: "app-sa@project.iam.gserviceaccount.com"
+ scopes:
+ - "https://www.googleapis.com/auth/logging.write"
+ - "https://www.googleapis.com/auth/monitoring.write"
+
+ metadata:
+ enable-oslogin: "TRUE"
+
+ tags:
+ - "http-server"
+ - "https-server"
+
+ preemptible: false
+ automatic_restart: true
+ on_host_maintenance: "MIGRATE"
+ deletion_protection: true
+
+ shielded_vm:
+ enable_secure_boot: true
+ enable_vtpm: true
+ enable_integrity_monitoring: true
 
 # Database connections for schema inspection
 database_connections:
-  - name: "production-database"
-    instance_connection_name: "project:region:instance"
-    database: "mydb"
-    username: "postgres"
-    password: "${DB_PASSWORD}"  # Use env var
-    use_private_ip: true
-    
-    # Optional: SSH tunnel through bastion
-    ssh_tunnel:
-      enabled: true
-      bastion_host: "bastion"
-      bastion_zone: "us-west1-a"
-      project: "my-project"
-      private_ip: "10.50.0.3"
-      use_iap: true
-    
-    # Schema baseline configuration
-    schema_baseline:
-      expected_tables: 124
-      expected_views: 2
-      expected_sequences: 15
-      expected_functions: 8
-      expected_procedures: 3
-      expected_roles: 12
-      expected_extensions: 2
-      expected_database_owner: "cloudsqlsuperuser"
-      expected_table_owner: "postgres"
-      
-      # Ownership exceptions
-      table_owner_exceptions:
-        audit_log: "audit_user"
-        system_config: "admin"
-      
-      # Required extensions
-      required_extensions:
-        - pgcrypto
-        - uuid-ossp
+ - name: "production-database"
+ instance_connection_name: "project:region:instance"
+ database: "mydb"
+ username: "postgres"
+ password: "${DB_PASSWORD}" # Use env var
+ use_private_ip: true
+
+ # Optional: SSH tunnel through bastion
+ ssh_tunnel:
+ enabled: true
+ bastion_host: "bastion"
+ bastion_zone: "us-west1-a"
+ project: "my-project"
+ private_ip: "10.50.0.3"
+ use_iap: true
+
+ # Schema baseline configuration
+ schema_baseline:
+ expected_tables: 124
+ expected_views: 2
+ expected_sequences: 15
+ expected_functions: 8
+ expected_procedures: 3
+ expected_roles: 12
+ expected_extensions: 2
+ expected_database_owner: "cloudsqlsuperuser"
+ expected_table_owner: "postgres"
+
+ # Ownership exceptions
+ table_owner_exceptions:
+ audit_log: "audit_user"
+ system_config: "admin"
+
+ # Required extensions
+ required_extensions:
+ - pgcrypto
+ - uuid-ossp
 ```
 
 ## Commands
@@ -277,10 +277,10 @@ database_connections:
 All commands support these global flags:
 
 ```
---config string       Config file path (default: config.yaml)
---output string       Output format: text|json|yaml|tui (default: text)
---log-file string     Write logs to file (in addition to stderr)
---json-logs           Output logs in JSON format
+--config string Config file path (default: config.yaml)
+--output string Output format: text|json|yaml|tui (default: text)
+--log-file string Write logs to file (in addition to stderr)
+--json-logs Output logs in JSON format
 ```
 
 ### Cloud SQL Commands
@@ -509,21 +509,21 @@ Apply labels to resources for selective analysis:
 **Cloud SQL:**
 ```bash
 gcloud sql instances patch INSTANCE_NAME \
-  --update-labels database-role=application
+ --update-labels database-role=application
 ```
 
 **GKE:**
 ```bash
 gcloud container clusters update CLUSTER_NAME \
-  --update-labels cluster-role=production \
-  --location LOCATION
+ --update-labels cluster-role=production \
+ --location LOCATION
 ```
 
 **GCE:**
 ```bash
 gcloud compute instances add-labels INSTANCE_NAME \
-  --labels instance-role=app-server,env=production \
-  --zone ZONE
+ --labels instance-role=app-server,env=production \
+ --zone ZONE
 ```
 
 ### Baseline Generation
@@ -554,12 +554,12 @@ set -e
 CRITICAL=$(jq '[.drifts[] | select(.severity=="CRITICAL")] | length' gce-drift.json)
 
 if [ "$CRITICAL" -gt 0 ]; then
-  echo "❌ Critical drifts detected!"
-  jq '.drifts[] | select(.severity=="CRITICAL")' gce-drift.json
-  exit 1
+ echo " Critical drifts detected!"
+ jq '.drifts[] | select(.severity=="CRITICAL")' gce-drift.json
+ exit 1
 fi
 
-echo "✅ No critical drifts detected"
+echo " No critical drifts detected"
 ```
 
 ### Daily Compliance Checks
@@ -573,15 +573,15 @@ mkdir -p "$REPORT_DIR"
 
 # Run all analyses
 ./drift-analysis-cli gcp sql --config config.yaml --output json \
-  --log-file "$REPORT_DIR/sql-$DATE.log" > "$REPORT_DIR/sql-drift-$DATE.json"
+ --log-file "$REPORT_DIR/sql-$DATE.log" > "$REPORT_DIR/sql-drift-$DATE.json"
 
 ./drift-analysis-cli gcp gke --config config.yaml --output json \
-  --log-file "$REPORT_DIR/gke-$DATE.log" > "$REPORT_DIR/gke-drift-$DATE.json"
+ --log-file "$REPORT_DIR/gke-$DATE.log" > "$REPORT_DIR/gke-drift-$DATE.json"
 
 ./drift-analysis-cli gcp gce --config config.yaml --output json \
-  --log-file "$REPORT_DIR/gce-$DATE.log" > "$REPORT_DIR/gce-drift-$DATE.json"
+ --log-file "$REPORT_DIR/gce-$DATE.log" > "$REPORT_DIR/gce-drift-$DATE.json"
 
-echo "✅ Compliance reports generated in $REPORT_DIR"
+echo " Compliance reports generated in $REPORT_DIR"
 ```
 
 ### Multi-Environment Analysis
@@ -619,40 +619,40 @@ golangci-lint run
 
 ```
 drift-analysis-cli/
-├── main.go                    # CLI entry point
-├── cmd/                       # Cobra commands
-│   ├── root.go               # Root command with global flags
-│   ├── gcp.go                # GCP parent command
-│   ├── gcp_sql.go            # Cloud SQL drift command
-│   ├── gcp_sql_db.go         # Database inspection command
-│   ├── gcp_gke.go            # GKE drift command
-│   └── gcp_gce.go            # GCE drift command
-├── pkg/
-│   ├── gcp/
-│   │   ├── sql/              # Cloud SQL package
-│   │   │   ├── analyzer.go  # Instance discovery & drift analysis
-│   │   │   ├── comparators.go # Drift comparison logic
-│   │   │   ├── report.go    # Report formatting
-│   │   │   ├── inspector.go # Database inspection
-│   │   │   ├── cache.go     # Schema caching
-│   │   │   └── proxy.go     # Cloud SQL Proxy
-│   │   ├── gke/              # GKE package
-│   │   │   ├── analyzer.go  # Cluster discovery & drift analysis
-│   │   │   ├── comparators.go # Drift comparison logic
-│   │   │   └── report.go    # Report formatting
-│   │   └── gce/              # GCE package
-│   │       ├── analyzer.go  # Instance discovery & drift analysis
-│   │       ├── comparators.go # Drift comparison logic with severity
-│   │       ├── extractor.go # Config extraction from API
-│   │       └── report.go    # Report formatting
-│   ├── logger/               # Structured logging
-│   │   └── logger.go        # JSON and text logging
-│   └── tui/                  # Terminal UI
-│       ├── model.go         # Bubble Tea model
-│       └── converters.go    # Data converters
-├── config.yaml               # Your configuration (gitignored)
-├── config.yaml.example       # Example configuration
-└── README.md                 # This file
+ main.go # CLI entry point
+ cmd/ # Cobra commands
+ root.go # Root command with global flags
+ gcp.go # GCP parent command
+ gcp_sql.go # Cloud SQL drift command
+ gcp_sql_db.go # Database inspection command
+ gcp_gke.go # GKE drift command
+ gcp_gce.go # GCE drift command
+ pkg/
+ gcp/
+ sql/ # Cloud SQL package
+ analyzer.go # Instance discovery & drift analysis
+ comparators.go # Drift comparison logic
+ report.go # Report formatting
+ inspector.go # Database inspection
+ cache.go # Schema caching
+ proxy.go # Cloud SQL Proxy
+ gke/ # GKE package
+ analyzer.go # Cluster discovery & drift analysis
+ comparators.go # Drift comparison logic
+ report.go # Report formatting
+ gce/ # GCE package
+ analyzer.go # Instance discovery & drift analysis
+ comparators.go # Drift comparison logic with severity
+ extractor.go # Config extraction from API
+ report.go # Report formatting
+ logger/ # Structured logging
+ logger.go # JSON and text logging
+ tui/ # Terminal UI
+ model.go # Bubble Tea model
+ converters.go # Data converters
+ config.yaml # Your configuration (gitignored)
+ config.yaml.example # Example configuration
+ README.md # This file
 ```
 
 ## Error Handling
@@ -669,10 +669,10 @@ The CLI follows Go and Cobra best practices for error handling:
 ```go
 configData, err := os.ReadFile(cfgFile)
 if err != nil {
-    logger.Error("Failed to read config file", err, map[string]interface{}{
-        "file": cfgFile,
-    })
-    return fmt.Errorf("failed to read config file: %w", err)
+ logger.Error("Failed to read config file", err, map[string]interface{}{
+ "file": cfgFile,
+ })
+ return fmt.Errorf("failed to read config file: %w", err)
 }
 ```
 
@@ -692,9 +692,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ### Cloud SQL Drift Report
 
 ```
-═══════════════════════════════════════════════════════════════════════════════
-  GCP PostgreSQL Drift Analysis Report
-═══════════════════════════════════════════════════════════════════════════════
+
+ GCP PostgreSQL Drift Analysis Report
+
 
 Generated: 2026-01-12T16:00:00-08:00
 Total Instances: 5
@@ -702,45 +702,45 @@ Instances with Drift: 3
 Compliance Rate: 40.0%
 
 Drift Summary
-  [!] CRITICAL:   2
-  [!] HIGH:       4
-  [*] MEDIUM:     7
-  [-] LOW:        3
+ [!] CRITICAL: 2
+ [!] HIGH: 4
+ [*] MEDIUM: 7
+ [-] LOW: 3
 
-───────────────────────────────────────────────────────────────────────────────
- Cloud SQL Instance: production-db-1 
 
-Project:  my-project-123
-Region:   us-central1
-State:    RUNNABLE
-Role:     application
+ Cloud SQL Instance: production-db-1
+
+Project: my-project-123
+Region: us-central1
+State: RUNNABLE
+Role: application
 
 Detected Drifts: 3
 
-  [!] [CRITICAL] settings.ip_configuration.require_ssl
-      Expected: true
-      Actual:   false
+ [!] [CRITICAL] settings.ip_configuration.require_ssl
+ Expected: true
+ Actual: false
 
-  [!] [HIGH] settings.availability_type
-      Expected: REGIONAL
-      Actual:   ZONAL
+ [!] [HIGH] settings.availability_type
+ Expected: REGIONAL
+ Actual: ZONAL
 
-  [*] [MEDIUM] database_flags.max_connections
-      Expected: 200
-      Actual:   100
+ [*] [MEDIUM] database_flags.max_connections
+ Expected: 200
+ Actual: 100
 
 Recommendations:
-  - Enable SSL requirement to secure connections
-  - Consider REGIONAL availability for production workloads
-  - Review connection pool settings
+ - Enable SSL requirement to secure connections
+ - Consider REGIONAL availability for production workloads
+ - Review connection pool settings
 ```
 
 ### GCE Drift Report
 
 ```
-═══════════════════════════════════════════════════════════════════════════════
-  GCE Drift Analysis Report
-═══════════════════════════════════════════════════════════════════════════════
+
+ GCE Drift Analysis Report
+
 
 Generated: 2026-01-12T16:00:00-08:00
 Total Instances: 12
@@ -748,74 +748,74 @@ Instances with Drift: 3
 Compliance Rate: 75.0%
 
 Drift Summary
-  [!] CRITICAL:   1
-  [!] HIGH:       2
-  [*] MEDIUM:     4
-  [-] LOW:        2
+ [!] CRITICAL: 1
+ [!] HIGH: 2
+ [*] MEDIUM: 4
+ [-] LOW: 2
 
-───────────────────────────────────────────────────────────────────────────────
- Instance: app-server-1 
 
-Project:  my-project
-Zone:     us-west1-a
-Status:   RUNNING
+ Instance: app-server-1
+
+Project: my-project
+Zone: us-west1-a
+Status: RUNNING
 
 Detected Drifts: 2
 
-  [!] [CRITICAL] network_config.external_ip
-      Expected: false (no external IP)
-      Actual:   35.203.XXX.XXX (external IP present)
-      
-      ⚠️  SECURITY ISSUE: Instance has unexpected external IP exposure
+ [!] [CRITICAL] network_config.external_ip
+ Expected: false (no external IP)
+ Actual: 35.203.XXX.XXX (external IP present)
 
-  [!] [HIGH] vm_config.preemptible
-      Expected: false
-      Actual:   true
-      
-      ⚠️  Production instance is preemptible - may be terminated at any time
+ SECURITY ISSUE: Instance has unexpected external IP exposure
+
+ [!] [HIGH] vm_config.preemptible
+ Expected: false
+ Actual: true
+
+ Production instance is preemptible - may be terminated at any time
 
 Recommendations:
-  - Remove external IP to improve security posture
-  - Convert to non-preemptible instance for production reliability
+ - Remove external IP to improve security posture
+ - Convert to non-preemptible instance for production reliability
 ```
 
 ### Database Schema Comparison
 
 ```
-═══════════════════════════════════════════════════════════════════════════════
-  Database Schema Drift Report
-═══════════════════════════════════════════════════════════════════════════════
+
+ Database Schema Drift Report
+
 
 Connection: production-database
-Database:   mydb
-Timestamp:  2026-01-12T16:00:00-08:00
+Database: mydb
+Timestamp: 2026-01-12T16:00:00-08:00
 
 Schema Comparison Results
-  Tables:     124 (expected: 124) ✓
-  Views:      2   (expected: 2)   ✓
-  Sequences:  16  (expected: 15) ⚠️ +1
-  Functions:  8   (expected: 8)   ✓
-  Procedures: 3   (expected: 3)   ✓
-  Roles:      13  (expected: 12) ⚠️ +1
-  Extensions: 2   (expected: 2)   ✓
+ Tables: 124 (expected: 124)
+ Views: 2 (expected: 2)
+ Sequences: 16 (expected: 15) +1
+ Functions: 8 (expected: 8)
+ Procedures: 3 (expected: 3)
+ Roles: 13 (expected: 12) +1
+ Extensions: 2 (expected: 2)
 
 Detected Changes: 3
 
-  [!] New Sequence Added
-      Name: user_activity_logs_id_seq
-      Owner: postgres
-      
-  [!] New Role Added
-      Name: reporting_user
-      Superuser: false
-      
-  [*] Table Ownership Changed
-      Table: audit_log
-      Expected Owner: audit_user
-      Actual Owner: postgres
+ [!] New Sequence Added
+ Name: user_activity_logs_id_seq
+ Owner: postgres
+
+ [!] New Role Added
+ Name: reporting_user
+ Superuser: false
+
+ [*] Table Ownership Changed
+ Table: audit_log
+ Expected Owner: audit_user
+ Actual Owner: postgres
 
 Recommendations:
-  - Review new sequence user_activity_logs_id_seq
-  - Document purpose of new role reporting_user
-  - Verify audit_log ownership change is intentional
+ - Review new sequence user_activity_logs_id_seq
+ - Document purpose of new role reporting_user
+ - Verify audit_log ownership change is intentional
 ```
