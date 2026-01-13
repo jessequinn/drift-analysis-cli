@@ -1,17 +1,80 @@
-# Unified configuration for both Cloud SQL and GKE drift analysis
-# This single config file supports both resource types
+# Unified configuration for Cloud SQL, GKE, and GCE drift analysis
+# This config demonstrates YAML anchors & aliases to reduce duplication
+
+# ==============================================================================
+# COMMON CONFIGURATION ANCHORS
+# Define reusable configuration fragments here
+# ==============================================================================
+
+# Common authorized networks for database access
+common_authorized_networks: &common-authorized-networks
+  - "10.0.0.0/24"     # Corporate VPN
+  - "192.168.1.0/24"  # Office network
+
+# Common database flags for all PostgreSQL instances
+common_database_flags: &common-database-flags
+  cloudsql.iam_authentication: "on"
+  log_connections: "on"
+  log_disconnections: "on"
+
+# Common backup settings (7 days retention)
+common_backup_settings: &common-backup-settings
+  backup_enabled: true
+  backup_retention_days: 7
+  point_in_time_recovery: true
+  transaction_log_retention_days: 7
+
+# Critical backup settings (30 days retention for production)
+critical_backup_settings: &critical-backup-settings
+  backup_enabled: true
+  backup_retention_days: 30
+  point_in_time_recovery: true
+  transaction_log_retention_days: 30
+
+# Common IP configuration (private with SSL)
+common_ip_config: &common-ip-config
+  ipv4_enabled: false
+  require_ssl: true
+  authorized_networks: *common-authorized-networks
+
+# Common IP configuration (private without SSL)
+common_ip_config_no_ssl: &common-ip-config-no-ssl
+  ipv4_enabled: false
+  require_ssl: false
+  authorized_networks: *common-authorized-networks
+
+# Common insights configuration
+common_insights_config: &common-insights-config
+  query_insights_enabled: true
+  query_plans_per_minute: 5
+  query_string_length: 1024
+  record_application_tags: false
+
+# SSH tunnel template
+ssh_tunnel_template: &ssh-tunnel-template
+  enabled: true
+  bastion_host: "bastion"
+  use_iap: true
+
+# SSL configuration template
+ssl_config_template: &ssl-config-template
+  enabled: true
+  ssl_mode: "require"
+
+# ==============================================================================
+# PROJECT CONFIGURATION
+# ==============================================================================
 
 projects:
   - my-production-project
   - my-staging-project
   - my-qa-project
 
-# ============================================================================
-# Cloud SQL INSTANCE baselines (infrastructure configuration)
-# ============================================================================
-# These define expected Cloud SQL INSTANCE settings: version, tier, disk,
-# database flags, backup settings, IP configuration, etc.
-# This is for INFRASTRUCTURE drift detection, not database schema inspection.
+# ==============================================================================
+# CLOUD SQL BASELINES
+# Infrastructure configuration for Cloud SQL instances
+# ==============================================================================
+
 sql_baselines:
   # Application databases
   - name: "application"
@@ -30,23 +93,18 @@ sql_baselines:
         - postgres
       
       database_flags:
-        cloudsql.iam_authentication: "on"
-        log_connections: "on"
+        <<: *common-database-flags  # Merge common flags
         max_connections: "200"
         
       settings:
         availability_type: REGIONAL
-        backup_enabled: true
-        backup_retention_days: 7
-        point_in_time_recovery: true
-        transaction_log_retention_days: 7
+        <<: *common-backup-settings  # Merge common backup settings
         
         ip_configuration:
-          ipv4_enabled: false
-          require_ssl: true
-          authorized_networks:
-            - "10.0.0.0/24"     # Corporate VPN
-            - "192.168.1.0/24"  # Office network
+          <<: *common-ip-config      # Merge common IP config
+        
+        insights_config:
+          <<: *common-insights-config
 
   # Microservices databases
   - name: "microservices"
@@ -62,131 +120,113 @@ sql_baselines:
         - postgres
       
       database_flags:
+        <<: *common-database-flags
         cloudsql.enable_pg_cron: "on"
-        cloudsql.iam_authentication: "on"
         
       settings:
-        backup_enabled: true
-        backup_retention_days: 7
-        point_in_time_recovery: true
+        availability_type: ZONAL
+        <<: *common-backup-settings
+        
+        ip_configuration:
+          <<: *common-ip-config
+        
+        insights_config:
+          <<: *common-insights-config
 
-# ============================================================================
-# DATABASE CONNECTION configurations (schema inspection)
-# ============================================================================
-# These are SEPARATE from infrastructure baselines and define how to connect
-# to actual databases to inspect schemas: tables, views, functions, roles,
-# procedures, sequences, extensions, etc.
-#
-# Inspected schemas are cached locally in: .drift-cache/database-schemas/
-# This enables fast schema comparison without re-connecting to databases.
-#
-# Use this for tracking database schema changes over time.
+  # Production vault database (critical with longer retention)
+  - name: "vault"
+    filter_labels:
+      database-role: "vault"
+    config:
+      database_version: POSTGRES_15
+      tier: db-custom-2-7680
+      disk_type: PD_SSD
+      
+      required_databases:
+        - vault
+        - postgres
+      
+      database_flags:
+        <<: *common-database-flags
+        
+      settings:
+        availability_type: REGIONAL
+        <<: *critical-backup-settings  # 30 days retention for vault
+        
+        ip_configuration:
+          ipv4_enabled: false
+          require_ssl: true
+          authorized_networks: []  # No public access for vault
+        
+        insights_config:
+          <<: *common-insights-config
+
+# ==============================================================================
+# DATABASE CONNECTION CONFIGURATIONS
+# For schema inspection - separate from infrastructure baselines
+# ==============================================================================
+
 database_connections:
-  # Production application database via SSH tunnel through bastion
+  # Production database via SSH tunnel through bastion
   - name: "prod-app-db"
     instance_connection_name: "my-production-project:us-central1:app-instance"
     database: "app_db"
-    username: "inspector"         # Read-only user recommended
-    password: ""                  # Leave empty for IAM auth
-    use_private_ip: true          # Use private IP (requires SSH tunnel or VPN)
-    project: "my-production-project"
-    
-    # SSH Tunnel configuration for bastion/jump host access
-    # Use this when Cloud SQL has private IP only
-    ssh_tunnel:
-      enabled: true
-      bastion_host: "bastion"                    # Bastion host name
-      bastion_zone: "us-central1-a"              # GCE zone of bastion
-      project: "my-production-project"           # GCP project
-      private_ip: "10.50.0.3"                    # Cloud SQL private IP address
-      local_port: 5432                           # Local port for tunnel
-      remote_port: 5432                          # Remote PostgreSQL port
-      use_iap: true                              # Use Identity-Aware Proxy
-      ssh_key_expiry: "1h"                       # SSH key expiration
-    
-    # Schema baseline expectations for drift detection
-    schema_baseline:
-      # Expected object counts
-      expected_tables: 50
-      expected_views: 5
-      expected_sequences: 10
-      expected_functions: 8
-      expected_procedures: 3
-      expected_roles: 15
-      expected_extensions: 3
-      
-      # Ownership validation
-      expected_database_owner: "cloudsqlsuperuser"  # Database must be owned by this user
-      expected_table_owner: "postgres"              # Default owner for all tables
-      expected_view_owner: "postgres"               # Default owner for all views
-      
-      # Allowed and forbidden owners
-      allowed_owners:                               # Only these owners are allowed
-        - "postgres"
-        - "cloudsqlsuperuser"
-        - "app_user"
-      forbidden_owners:                             # These owners trigger violations
-        - "root"
-        - "admin"
-        - "test_user"
-      
-      # Required objects (must exist)
-      required_tables:
-        - "public.users"
-        - "public.orders"
-        - "public.products"
-      
-      required_views:
-        - "public.user_summary"
-      
-      required_extensions:
-        - "uuid-ossp"
-        - "pg_trgm"
-        - "pgcrypto"
-      
-      # Forbidden objects (must not exist)
-      forbidden_tables:
-        - "public.temp_debug_table"
-        - "public.test_data"
-      
-      # Ownership exceptions (specific tables/views with different owners)
-      table_owner_exceptions:
-        "public.audit_log": "cloudsqlsuperuser"     # Audit table owned by superuser
-        "public.system_config": "cloudsqlsuperuser"
-      
-      view_owner_exceptions:
-        "public.admin_dashboard": "cloudsqlsuperuser"
-  
-  # Staging database (example without SSH tunnel)
-  - name: "staging-app-db"
-    instance_connection_name: "my-staging-project:us-central1:staging-instance"
-    database: "app_db"
-    username: "postgres"
-    password: "${DB_PASSWORD}"    # Can use environment variables
-    use_private_ip: false         # Public IP - no tunnel needed
-  
-  # Microservices database (alternative format)
-  - name: "microservices-db"
-    project: "my-production-project"
-    region: "us-central1"
-    instance_name: "microservices-instance"  # Will construct connection name
-    database: "service_a"
-    username: "readonly"
+    username: "inspector"
+    password: ""  # Leave empty for IAM auth
     use_private_ip: true
+    project: "my-production-project"
     
     ssh_tunnel:
-      enabled: true
-      bastion_host: "bastion"
+      <<: *ssh-tunnel-template
       bastion_zone: "us-central1-a"
       project: "my-production-project"
-      private_ip: "10.50.0.5"
-      use_iap: true
+      private_ip: "10.10.0.5"
+    
+    ssl_config:
+      <<: *ssl-config-template
+      server_ca: "certs/server-ca.pem"
+      client_cert: "certs/client-cert.pem"
+      client_key: "certs/client-key.pem"
+    
+    schema_baseline:
+      expected_tables: 50
+      expected_views: 5
+      expected_sequences: 20
+      expected_functions: 10
+      expected_procedures: 2
+      expected_roles: 5
+      expected_extensions: 2
+      expected_database_owner: "cloudsqlsuperuser"
+      expected_table_owner: "app_user"
+      
+      table_owner_exceptions:
+        _prisma_migrations: "cloudsqlsuperuser"
+        audit_log: "audit_user"
+      
+      required_extensions:
+        - uuid-ossp
+        - pgcrypto
 
-# ============================================================================
-# GKE baselines
-# ============================================================================
+  # Staging database (simpler config, no SSH tunnel)
+  - name: "staging-app-db"
+    instance_connection_name: "my-staging-project:us-central1:app-instance"
+    database: "app_db"
+    username: "postgres"
+    password: "${DB_PASSWORD}"  # Use environment variable
+    use_private_ip: false
+    
+    schema_baseline:
+      expected_tables: 50
+      expected_views: 5
+      expected_database_owner: "cloudsqlsuperuser"
+      expected_table_owner: "postgres"
+
+# ==============================================================================
+# GKE BASELINES
+# Infrastructure configuration for GKE clusters
+# ==============================================================================
+
 gke_baselines:
-  # Production GKE clusters
   - name: "production"
     filter_labels:
       cluster-role: "production"
@@ -194,42 +234,41 @@ gke_baselines:
       master_version: "1.33"
       release_channel: REGULAR
       private_cluster: true
-      workload_identity: true
-      network_policy: true
-      binary_authorization: true
+      master_global_access: true
+      datapath_provider: ADVANCED_DATAPATH
+      
       master_authorized_networks:
-        - "10.0.0.0/24"     # Corporate VPN
-        - "192.168.1.0/24"  # Office network
-    nodepool_config:
-      machine_type: n2-standard-4
-      disk_size_gb: 100
-      disk_type: pd-ssd
-      image_type: COS_CONTAINERD
-      auto_upgrade: true
-      auto_repair: true
-
-  # Development GKE clusters
-  - name: "development"
-    filter_labels:
-      cluster-role: "development"
-    cluster_config:
-      master_version: "1.33"
-      release_channel: RAPID
-      private_cluster: true
+        - "10.0.0.0/24"
+      
+      ip_allocation_policy:
+        stack_type: IPV4_IPV6
+      
+      shielded_nodes: true
+      security_posture: BASIC
       workload_identity: true
-    nodepool_config:
-      machine_type: n2-standard-2
-      disk_size_gb: 50
-      disk_type: pd-standard
-      image_type: COS_CONTAINERD
-      auto_upgrade: true
-      auto_repair: true
+      
+      logging_config:
+        enable_system_logs: true
+        enable_workload_logs: true
+      
+      monitoring_config:
+        enable_system_metrics: true
+        enable_apiserver_metrics: true
+      
+      nodepool_config:
+        machine_type: n2-standard-4
+        disk_size_gb: 100
+        disk_type: pd-ssd
+        image_type: COS_CONTAINERD
+        auto_upgrade: true
+        auto_repair: true
 
-# ============================================================================
-# GCE (Compute Engine) baselines
-# ============================================================================
+# ==============================================================================
+# GCE BASELINES
+# Infrastructure configuration for GCE instances
+# ==============================================================================
+
 gce_baselines:
-  # Production VM instances
   - name: "production-vms"
     filter_labels:
       env: "production"
@@ -244,126 +283,28 @@ gce_baselines:
       network_config:
         network: default
         subnetwork: default
-        external_ip: false          # No external IP for security
+        external_ip: false
         network_tier: PREMIUM
       
       service_account:
-        email: "app-sa@my-production-project.iam.gserviceaccount.com"
+        email: "app-sa@project.iam.gserviceaccount.com"
         scopes:
           - "https://www.googleapis.com/auth/logging.write"
           - "https://www.googleapis.com/auth/monitoring.write"
-          - "https://www.googleapis.com/auth/cloud-platform"
       
       metadata:
         enable-oslogin: "TRUE"
-        google-logging-enabled: "true"
-        google-monitoring-enabled: "true"
       
       tags:
         - "http-server"
         - "https-server"
       
-      labels:
-        env: "production"
-        managed-by: "terraform"
-      
-      # High availability settings
       preemptible: false
       automatic_restart: true
       on_host_maintenance: "MIGRATE"
       deletion_protection: true
       
-      # Security settings
       shielded_vm:
         enable_secure_boot: true
         enable_vtpm: true
         enable_integrity_monitoring: true
-
-  # Development/staging instances
-  - name: "development-vms"
-    filter_labels:
-      env: "development"
-    vm_config:
-      machine_type: e2-medium
-      disk_size_gb: 50
-      disk_type: pd-standard
-      image_family: ubuntu-2204-jammy
-      
-      network_config:
-        external_ip: false
-      
-      service_account:
-        email: "dev-sa@my-production-project.iam.gserviceaccount.com"
-        scopes:
-          - "https://www.googleapis.com/auth/cloud-platform"
-      
-      metadata:
-        enable-oslogin: "TRUE"
-      
-      preemptible: true              # OK for dev environments
-      automatic_restart: false
-      on_host_maintenance: "TERMINATE"
-      deletion_protection: false
-      
-      shielded_vm:
-        enable_secure_boot: false
-        enable_vtpm: true
-        enable_integrity_monitoring: true
-
-# ============================================================================
-# Usage Examples
-# ============================================================================
-#
-# 1. Check Cloud SQL infrastructure drift:
-#    ./drift-analysis-cli sql -config config.yaml
-#    Output: Shows which instances don't match baseline configuration
-#
-# 2. Inspect database schema (first time - creates cache):
-#    ./drift-analysis-cli sql inspect -connection prod-app-db
-#    Creates: .drift-cache/database-schemas/prod-app-db.json
-#
-# 3. Compare current schema with cached baseline:
-#    ./drift-analysis-cli sql inspect -connection prod-app-db --compare
-#    Output: Shows tables/views/functions added, deleted, or modified
-#
-# 4. List all cached schemas:
-#    ./drift-analysis-cli sql cache list
-#
-# 5. Export cached schema to YAML:
-#    ./drift-analysis-cli sql cache export -connection prod-app-db -output schema.yaml
-#
-# 6. Clear all cached schemas:
-#    ./drift-analysis-cli sql cache clear
-#
-# ============================================================================
-# Notes
-# ============================================================================
-#
-# SSH Tunnel (for private IP only instances):
-# - Requires bastion host/jump box in the same VPC as Cloud SQL
-# - Uses gcloud compute ssh with IAP tunneling
-# - Automatically manages tunnel lifecycle (start/stop)
-# - Command executed: gcloud compute ssh --zone ZONE BASTION --tunnel-through-iap
-#                     --project PROJECT --ssh-flag="-N -L localhost:PORT:PRIVATE_IP:5432"
-#
-# To get Cloud SQL private IP:
-# - gcloud sql instances describe INSTANCE --project=PROJECT --format="value(ipAddresses[0].ipAddress)"
-#
-# For public IP connections:
-# - Set use_private_ip: false
-# - Ensure authorized networks are configured on the instance
-# - No SSH tunnel needed
-#
-# Security recommendations:
-# - Use read-only database users for schema inspection
-# - Use IAM authentication (leave password empty)
-# - Store sensitive passwords in environment variables
-# - Consider using Secret Manager for production
-# - Restrict bastion host access via IAP policies
-#
-# Cache management:
-# - Cached schemas stored in: .drift-cache/database-schemas/
-# - Add .drift-cache/ to .gitignore
-# - Cache files are JSON format for fast read/write
-# - Consider committing baseline schemas to git for team sharing
-
