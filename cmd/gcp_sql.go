@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/sql"
+	"github.com/jessequinn/drift-analysis-cli/pkg/logger"
 	"github.com/jessequinn/drift-analysis-cli/pkg/tui"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
@@ -52,7 +53,11 @@ func runSQLAnalysis(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to create SQL analyzer: %w", err)
 	}
-	defer analyzer.Close()
+	defer func() {
+		if err := analyzer.Close(); err != nil {
+			logger.Warn("Failed to close SQL analyzer", map[string]interface{}{"error": err.Error()})
+		}
+	}()
 
 	// Run analysis for each baseline
 	for _, baseline := range config.SQLBaselines {

@@ -63,8 +63,8 @@ func init() {
 	sqlInspectCmd.Flags().StringVarP(&inspectOutput, "output-file", "o", "", "output file (default: stdout)")
 	sqlInspectCmd.Flags().StringVarP(&inspectFormat, "format", "f", "report", "output format (report|ddl)")
 
-	sqlInspectCmd.MarkFlagRequired("user")
-	sqlInspectCmd.MarkFlagRequired("password")
+	_ = sqlInspectCmd.MarkFlagRequired("user")
+	_ = sqlInspectCmd.MarkFlagRequired("password")
 }
 
 func runSQLInspect(cmd *cobra.Command, args []string) error {

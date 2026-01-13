@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -53,7 +54,9 @@ func (pm *ProxyManager) waitForProxy(maxWait time.Duration) error {
 	for time.Now().Before(deadline) {
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", pm.localPort), time.Second)
 		if err == nil {
-			conn.Close()
+			if err := conn.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close connection: %v\n", err)
+			}
 			return nil
 		}
 		time.Sleep(500 * time.Millisecond)
@@ -134,7 +137,9 @@ func (pm *ProxyManager) startCloudSQLProxy(ctx context.Context) error {
 			fmt.Printf("Started %s (PID: %d), waiting for it to be ready...\n", binary, pm.cmd.Process.Pid)
 
 			if err := pm.waitForProxy(30 * time.Second); err != nil {
-				pm.cmd.Process.Kill()
+				if err := pm.cmd.Process.Kill(); err != nil {
+					fmt.Fprintf(os.Stderr, "Warning: failed to kill proxy process: %v\n", err)
+				}
 				return fmt.Errorf("proxy failed to become ready: %w", err)
 			}
 

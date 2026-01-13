@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net"
+	"os"
 	"os/exec"
 	"time"
 )
@@ -26,7 +27,11 @@ func getFreePort() (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer listener.Close()
+	defer func() {
+		if err := listener.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close listener: %v\n", err)
+		}
+	}()
 
 	return listener.Addr().(*net.TCPAddr).Port, nil
 }
@@ -102,7 +107,9 @@ func (stm *SSHTunnelManager) Start(ctx context.Context) error {
 
 	// Wait for tunnel to be ready
 	if err := stm.waitForTunnel(30 * time.Second); err != nil {
-		stm.Stop()
+		if stopErr := stm.Stop(); stopErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to stop tunnel: %v\n", stopErr)
+		}
 		return fmt.Errorf("SSH tunnel failed to become ready: %w", err)
 	}
 
@@ -169,7 +176,9 @@ func (stm *SSHTunnelManager) waitForTunnel(maxWait time.Duration) error {
 		// Try to connect to the local port
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", stm.config.LocalPort), time.Second)
 		if err == nil {
-			conn.Close()
+			if err := conn.Close(); err != nil {
+				fmt.Fprintf(os.Stderr, "Warning: failed to close connection: %v\n", err)
+			}
 			return nil
 		}
 

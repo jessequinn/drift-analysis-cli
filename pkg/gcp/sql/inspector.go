@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"net"
+	"os"
 	"sort"
 	"strings"
 
@@ -343,7 +344,11 @@ func (di *DatabaseInspector) InspectDatabase(ctx context.Context) (*DatabaseSche
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect: %w", err)
 	}
-	defer cleanup()
+	defer func() {
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: cleanup failed: %v\n", cleanupErr)
+		}
+	}()
 
 	if err := db.PingContext(ctx); err != nil {
 		return nil, fmt.Errorf("failed to ping database: %w", err)
@@ -416,7 +421,9 @@ func (di *DatabaseInspector) connectWithCloudSQL(ctx context.Context) (*sql.DB, 
 	connConfig, err := pgx.ParseConfig(fmt.Sprintf("user=%s password=%s dbname=%s sslmode=disable",
 		di.user, di.password, di.database))
 	if err != nil {
-		cleanup()
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: cleanup failed: %v\n", cleanupErr)
+		}
 		return nil, nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
@@ -431,7 +438,9 @@ func (di *DatabaseInspector) connectWithCloudSQL(ctx context.Context) (*sql.DB, 
 	// Open database
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
-		cleanup()
+		if cleanupErr := cleanup(); cleanupErr != nil {
+			fmt.Fprintf(os.Stderr, "Warning: cleanup failed: %v\n", cleanupErr)
+		}
 		return nil, nil, fmt.Errorf("failed to open database: %w", err)
 	}
 
@@ -506,7 +515,11 @@ func (di *DatabaseInspector) getRoles(ctx context.Context, db *sql.DB, schema *D
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var role Role
@@ -545,7 +558,11 @@ func (di *DatabaseInspector) getExtensions(ctx context.Context, db *sql.DB, sche
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var ext Extension
@@ -574,7 +591,11 @@ func (di *DatabaseInspector) getTables(ctx context.Context, db *sql.DB, schema *
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var table TableInfo
@@ -643,7 +664,11 @@ func (di *DatabaseInspector) getTableColumns(ctx context.Context, db *sql.DB, ta
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var col ColumnInfo
@@ -679,7 +704,11 @@ func (di *DatabaseInspector) getTableConstraints(ctx context.Context, db *sql.DB
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var constraint ConstraintInfo
@@ -715,7 +744,11 @@ func (di *DatabaseInspector) getTableIndexes(ctx context.Context, db *sql.DB, ta
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var index IndexInfo
@@ -747,7 +780,11 @@ func (di *DatabaseInspector) getViews(ctx context.Context, db *sql.DB, schema *D
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var view ViewInfo
@@ -775,7 +812,11 @@ func (di *DatabaseInspector) getSequences(ctx context.Context, db *sql.DB, schem
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var seq SequenceInfo
@@ -809,7 +850,11 @@ func (di *DatabaseInspector) getFunctions(ctx context.Context, db *sql.DB, schem
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var fn FunctionInfo
@@ -842,7 +887,11 @@ func (di *DatabaseInspector) getProcedures(ctx context.Context, db *sql.DB, sche
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() {
+		if err := rows.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close rows: %v\n", err)
+		}
+	}()
 
 	for rows.Next() {
 		var proc ProcedureInfo

@@ -67,7 +67,11 @@ func (c *Command) Execute(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("failed to create GCE analyzer: %w", err)
 	}
-	defer gceAnalyzer.Close()
+	defer func() {
+		if err := gceAnalyzer.Close(); err != nil {
+			fmt.Fprintf(os.Stderr, "Warning: failed to close GCE analyzer: %v\n", err)
+		}
+	}()
 
 	// Discover instances
 	log.Printf("Discovering GCE instances across %d project(s)...", len(projectList))
@@ -89,8 +93,6 @@ func (c *Command) Execute(ctx context.Context) error {
 	}
 
 	// Run analysis for each baseline
-	var allReports []*DriftReport
-
 	for _, baseline := range baselines {
 		log.Printf("Analyzing instances against baseline: %s", baseline.Name)
 
@@ -104,7 +106,6 @@ func (c *Command) Execute(ctx context.Context) error {
 
 		// Analyze drift
 		report := gceAnalyzer.AnalyzeDrift(filteredInstances, baseline.VMConfig)
-		allReports = append(allReports, report)
 
 		// Output report
 		if err := c.outputReport(report, baseline.Name); err != nil {

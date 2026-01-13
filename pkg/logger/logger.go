@@ -74,7 +74,7 @@ func (l *Logger) log(level Level, msg string, fields map[string]interface{}, err
 
 		if l.jsonOutput {
 			data, _ := json.Marshal(entry)
-			fmt.Fprintln(l.writer, string(data))
+			_, _ = fmt.Fprintln(l.writer, string(data))
 		} else {
 			l.formatText(entry)
 		}
@@ -94,18 +94,18 @@ func (l *Logger) formatText(entry LogEntry) {
 	reset := "\033[0m"
 
 	color := levelColors[entry.Level]
-	fmt.Fprintf(l.writer, "%s[%s]%s %s - %s",
+	_, _ = fmt.Fprintf(l.writer, "%s[%s]%s %s - %s",
 		color, entry.Level, reset, entry.Timestamp, entry.Message)
 
 	if len(entry.Fields) > 0 {
-		fmt.Fprintf(l.writer, " %v", entry.Fields)
+		_, _ = fmt.Fprintf(l.writer, " %v", entry.Fields)
 	}
 
 	if entry.Error != "" {
-		fmt.Fprintf(l.writer, " error=%s", entry.Error)
+		_, _ = fmt.Fprintf(l.writer, " error=%s", entry.Error)
 	}
 
-	fmt.Fprintln(l.writer)
+	_, _ = fmt.Fprintln(l.writer)
 }
 
 // shouldLog determines if message should be logged based on level

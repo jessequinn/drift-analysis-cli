@@ -69,7 +69,11 @@ func runGCEAnalysis(cmd *cobra.Command, args []string) error {
 		logger.Error("Failed to create GCE analyzer", err)
 		return fmt.Errorf("failed to create GCE analyzer: %w", err)
 	}
-	defer analyzer.Close()
+	defer func() {
+		if err := analyzer.Close(); err != nil {
+			logger.Warn("Failed to close GCE analyzer", map[string]interface{}{"error": err.Error()})
+		}
+	}()
 
 	// Run analysis for each baseline
 	for _, baseline := range config.GCEBaselines {

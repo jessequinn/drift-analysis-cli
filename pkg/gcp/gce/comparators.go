@@ -265,12 +265,10 @@ func compareServiceAccount(actual, baseline *ServiceAccountConfig) []Drift {
 	}
 
 	if baseline.Email != "" && baseline.Email != actual.Email {
-		severity := "CRITICAL"
 		// Using default compute service account is a security risk
+		severity := "HIGH"
 		if strings.Contains(actual.Email, "-compute@developer.gserviceaccount.com") {
 			severity = "CRITICAL"
-		} else {
-			severity = "HIGH"
 		}
 
 		drifts = append(drifts, Drift{

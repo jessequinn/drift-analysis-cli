@@ -157,10 +157,10 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 		validationResult := sql.ValidateSchemaAgainstBaseline(currentSchema, conn.SchemaBaseline)
 
 		if validationResult.HasDrift {
-			fmt.Println("\n[WARNING] Schema drift detected!\n")
+			fmt.Println("\n[WARNING] Schema drift detected!")
 			fmt.Println(sql.FormatValidationResult(validationResult))
 		} else {
-			fmt.Println("[OK] Database matches baseline expectations\n")
+			fmt.Println("[OK] Database matches baseline expectations")
 		}
 	}
 
@@ -193,13 +193,15 @@ func runSQLDb(cmd *cobra.Command, args []string) error {
 			return nil
 		}
 
-		fmt.Println("\nWARNING: Schema changes detected:\n")
+		fmt.Println("\nWARNING: Schema changes detected:")
 		printSchemaDiff(diff)
 
 		// Ask if user wants to update cache
 		fmt.Println("\nUpdate cached baseline? (yes/no)")
 		var response string
-		fmt.Scanln(&response)
+		if _, err := fmt.Scanln(&response); err != nil {
+			return fmt.Errorf("failed to read user input: %w", err)
+		}
 		if response == "yes" || response == "y" {
 			if err := cache.Save(conn.GetConnectionName(), conn.Database, currentSchema); err != nil {
 				return fmt.Errorf("failed to update cache: %w", err)

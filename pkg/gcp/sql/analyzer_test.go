@@ -149,7 +149,7 @@ func TestAnalyzeDrift(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewAnalyzer() error = %v", err)
 	}
-	defer analyzer.Close()
+	defer func() { _ = analyzer.Close() }()
 
 	instances := []*DatabaseInstance{
 		{
@@ -189,7 +189,7 @@ func TestAnalyzeInstance(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewAnalyzer() error = %v", err)
 	}
-	defer analyzer.Close()
+	defer func() { _ = analyzer.Close() }()
 
 	inst := &DatabaseInstance{
 		Project:   "test-project",
