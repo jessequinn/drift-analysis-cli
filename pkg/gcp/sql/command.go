@@ -25,9 +25,9 @@ type Command struct {
 
 // Config represents the YAML configuration file structure for SQL
 type Config struct {
-	Projects            []string               `yaml:"projects"`
-	Baselines           []SQLBaseline          `yaml:"baselines,omitempty"`
-	DatabaseConnections []DatabaseConnection   `yaml:"database_connections,omitempty"`
+	Projects            []string             `yaml:"projects"`
+	Baselines           []SQLBaseline        `yaml:"baselines,omitempty"`
+	DatabaseConnections []DatabaseConnection `yaml:"database_connections,omitempty"`
 
 	// Legacy single baseline support
 	Baseline     *DatabaseConfig   `yaml:"baseline,omitempty"`
@@ -46,21 +46,24 @@ type SQLBaseline struct {
 // This is separate from infrastructure - focuses on inspecting database content:
 // tables, views, functions, procedures, owners, roles, etc.
 type DatabaseConnection struct {
-	Name                   string `yaml:"name"`                             // Friendly name
-	InstanceConnectionName string `yaml:"instance_connection_name"`         // project:region:instance
-	Database               string `yaml:"database"`                         // Database name
-	Username               string `yaml:"username"`                         // DB user
-	Password               string `yaml:"password,omitempty"`               // Password (or use IAM)
-	UsePrivateIP           bool   `yaml:"use_private_ip,omitempty"`         // Private IP connection
-	
+	Name                   string `yaml:"name"`                     // Friendly name
+	InstanceConnectionName string `yaml:"instance_connection_name"` // project:region:instance
+	Database               string `yaml:"database"`                 // Database name
+	Username               string `yaml:"username"`                 // DB user
+	Password               string `yaml:"password,omitempty"`       // Password (or use IAM)
+	UsePrivateIP           bool   `yaml:"use_private_ip,omitempty"` // Private IP connection
+
 	// Optional: construct connection name from parts
 	Project      string `yaml:"project,omitempty"`
 	Region       string `yaml:"region,omitempty"`
 	InstanceName string `yaml:"instance_name,omitempty"`
-	
+
 	// SSH Tunnel configuration (for bastion/jump host access)
 	SSHTunnel *SSHTunnelConfig `yaml:"ssh_tunnel,omitempty"`
-	
+
+	// SSL Configuration (for encrypted connections)
+	SSLConfig *SSLConfig `yaml:"ssl_config,omitempty"`
+
 	// Schema baseline expectations for drift detection
 	SchemaBaseline *SchemaBaseline `yaml:"schema_baseline,omitempty"`
 }
@@ -68,34 +71,34 @@ type DatabaseConnection struct {
 // SchemaBaseline defines expected schema counts and specific objects
 type SchemaBaseline struct {
 	// Expected counts
-	ExpectedTables     *int     `yaml:"expected_tables,omitempty"`
-	ExpectedViews      *int     `yaml:"expected_views,omitempty"`
-	ExpectedSequences  *int     `yaml:"expected_sequences,omitempty"`
-	ExpectedFunctions  *int     `yaml:"expected_functions,omitempty"`
-	ExpectedProcedures *int     `yaml:"expected_procedures,omitempty"`
-	ExpectedRoles      *int     `yaml:"expected_roles,omitempty"`
-	ExpectedExtensions *int     `yaml:"expected_extensions,omitempty"`
-	
+	ExpectedTables     *int `yaml:"expected_tables,omitempty"`
+	ExpectedViews      *int `yaml:"expected_views,omitempty"`
+	ExpectedSequences  *int `yaml:"expected_sequences,omitempty"`
+	ExpectedFunctions  *int `yaml:"expected_functions,omitempty"`
+	ExpectedProcedures *int `yaml:"expected_procedures,omitempty"`
+	ExpectedRoles      *int `yaml:"expected_roles,omitempty"`
+	ExpectedExtensions *int `yaml:"expected_extensions,omitempty"`
+
 	// Required objects (must exist)
 	RequiredTables     []string `yaml:"required_tables,omitempty"`
 	RequiredViews      []string `yaml:"required_views,omitempty"`
 	RequiredFunctions  []string `yaml:"required_functions,omitempty"`
 	RequiredProcedures []string `yaml:"required_procedures,omitempty"`
 	RequiredExtensions []string `yaml:"required_extensions,omitempty"`
-	
+
 	// Forbidden objects (must not exist)
 	ForbiddenTables []string `yaml:"forbidden_tables,omitempty"`
-	
+
 	// Ownership validation
-	ExpectedDatabaseOwner string   `yaml:"expected_database_owner,omitempty"`    // e.g., "cloudsqlsuperuser"
-	ExpectedTableOwner    string   `yaml:"expected_table_owner,omitempty"`       // Default owner for all tables
-	ExpectedViewOwner     string   `yaml:"expected_view_owner,omitempty"`        // Default owner for all views
-	ExpectedSequenceOwner string   `yaml:"expected_sequence_owner,omitempty"`    // Default owner for all sequences
-	ExpectedFunctionOwner string   `yaml:"expected_function_owner,omitempty"`    // Default owner for all functions
-	ExpectedProcedureOwner string  `yaml:"expected_procedure_owner,omitempty"`   // Default owner for all procedures
-	AllowedOwners         []string `yaml:"allowed_owners,omitempty"`             // List of allowed owners
-	ForbiddenOwners       []string `yaml:"forbidden_owners,omitempty"`           // Owners that should not exist
-	
+	ExpectedDatabaseOwner  string   `yaml:"expected_database_owner,omitempty"`  // e.g., "cloudsqlsuperuser"
+	ExpectedTableOwner     string   `yaml:"expected_table_owner,omitempty"`     // Default owner for all tables
+	ExpectedViewOwner      string   `yaml:"expected_view_owner,omitempty"`      // Default owner for all views
+	ExpectedSequenceOwner  string   `yaml:"expected_sequence_owner,omitempty"`  // Default owner for all sequences
+	ExpectedFunctionOwner  string   `yaml:"expected_function_owner,omitempty"`  // Default owner for all functions
+	ExpectedProcedureOwner string   `yaml:"expected_procedure_owner,omitempty"` // Default owner for all procedures
+	AllowedOwners          []string `yaml:"allowed_owners,omitempty"`           // List of allowed owners
+	ForbiddenOwners        []string `yaml:"forbidden_owners,omitempty"`         // Owners that should not exist
+
 	// Specific ownership exceptions
 	TableOwnerExceptions     map[string]string `yaml:"table_owner_exceptions,omitempty"`     // table -> expected owner
 	ViewOwnerExceptions      map[string]string `yaml:"view_owner_exceptions,omitempty"`      // view -> expected owner
@@ -106,15 +109,24 @@ type SchemaBaseline struct {
 
 // SSHTunnelConfig defines SSH tunnel configuration for accessing private databases
 type SSHTunnelConfig struct {
-	Enabled      bool   `yaml:"enabled"`                   // Enable SSH tunnel
-	BastionHost  string `yaml:"bastion_host"`              // Bastion host name (e.g., "bastion")
-	BastionZone  string `yaml:"bastion_zone"`              // GCE zone (e.g., "us-west1-a")
-	Project      string `yaml:"project"`                   // GCP project
-	LocalPort    int    `yaml:"local_port,omitempty"`      // Local port (default: 5432)
-	PrivateIP    string `yaml:"private_ip"`                // Cloud SQL private IP
-	RemotePort   int    `yaml:"remote_port,omitempty"`     // Remote port (default: 5432)
-	UseIAP       bool   `yaml:"use_iap"`                   // Use Identity-Aware Proxy
-	SSHKeyExpiry string `yaml:"ssh_key_expiry,omitempty"`  // SSH key expiry (default: 1h)
+	Enabled      bool   `yaml:"enabled"`                  // Enable SSH tunnel
+	BastionHost  string `yaml:"bastion_host"`             // Bastion host name (e.g., "bastion")
+	BastionZone  string `yaml:"bastion_zone"`             // GCE zone (e.g., "us-west1-a")
+	Project      string `yaml:"project"`                  // GCP project
+	LocalPort    int    `yaml:"local_port,omitempty"`     // Local port (default: 5432)
+	PrivateIP    string `yaml:"private_ip"`               // Cloud SQL private IP
+	RemotePort   int    `yaml:"remote_port,omitempty"`    // Remote port (default: 5432)
+	UseIAP       bool   `yaml:"use_iap"`                  // Use Identity-Aware Proxy
+	SSHKeyExpiry string `yaml:"ssh_key_expiry,omitempty"` // SSH key expiry (default: 1h)
+}
+
+// SSLConfig defines SSL/TLS configuration for database connections
+type SSLConfig struct {
+	Enabled    bool   `yaml:"enabled"`               // Enable SSL
+	ServerCA   string `yaml:"server_ca"`             // Path to server CA certificate
+	ClientCert string `yaml:"client_cert,omitempty"` // Path to client certificate
+	ClientKey  string `yaml:"client_key,omitempty"`  // Path to client private key
+	SSLMode    string `yaml:"ssl_mode,omitempty"`    // SSL mode: disable, require, verify-ca, verify-full
 }
 
 // GetConnectionName returns the full instance connection name
@@ -122,11 +134,11 @@ func (dc *DatabaseConnection) GetConnectionName() string {
 	if dc.InstanceConnectionName != "" {
 		return dc.InstanceConnectionName
 	}
-	
+
 	if dc.Project != "" && dc.Region != "" && dc.InstanceName != "" {
 		return fmt.Sprintf("%s:%s:%s", dc.Project, dc.Region, dc.InstanceName)
 	}
-	
+
 	return ""
 }
 
@@ -135,20 +147,20 @@ func (dc *DatabaseConnection) Validate() error {
 	if dc.Name == "" {
 		return fmt.Errorf("connection name is required")
 	}
-	
+
 	connName := dc.GetConnectionName()
 	if connName == "" {
 		return fmt.Errorf("must provide either instance_connection_name or project+region+instance_name")
 	}
-	
+
 	if dc.Database == "" {
 		return fmt.Errorf("database name is required")
 	}
-	
+
 	if dc.Username == "" {
 		return fmt.Errorf("username is required")
 	}
-	
+
 	return nil
 }
 
@@ -174,10 +186,10 @@ type ConnectionConfig struct {
 	Password               string `yaml:"password,omitempty"`
 	UsePrivateIP           bool   `yaml:"use_private_ip,omitempty"`
 	Project                string `yaml:"project,omitempty"`
-	
+
 	// For instances without connection name format
-	InstanceName           string `yaml:"instance_name,omitempty"`
-	Region                 string `yaml:"region,omitempty"`
+	InstanceName string `yaml:"instance_name,omitempty"`
+	Region       string `yaml:"region,omitempty"`
 }
 
 // Compile-time interface implementation check
@@ -408,11 +420,11 @@ func (c *ConnectionConfig) GetConnectionName() string {
 	if c.InstanceConnectionName != "" {
 		return c.InstanceConnectionName
 	}
-	
+
 	if c.Project != "" && c.Region != "" && c.InstanceName != "" {
 		return fmt.Sprintf("%s:%s:%s", c.Project, c.Region, c.InstanceName)
 	}
-	
+
 	return ""
 }
 
@@ -421,19 +433,19 @@ func (c *ConnectionConfig) Validate() error {
 	if c == nil {
 		return fmt.Errorf("connection config is nil")
 	}
-	
+
 	connName := c.GetConnectionName()
 	if connName == "" {
 		return fmt.Errorf("must provide either instance_connection_name or project+region+instance_name")
 	}
-	
+
 	if c.Database == "" {
 		return fmt.Errorf("database name is required")
 	}
-	
+
 	if c.Username == "" {
 		return fmt.Errorf("username is required")
 	}
-	
+
 	return nil
 }

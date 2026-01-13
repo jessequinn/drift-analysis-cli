@@ -16,15 +16,16 @@ import (
 
 // DatabaseInspector connects to PostgreSQL instances and extracts detailed information
 type DatabaseInspector struct {
-	useCloudSQLConnector bool
+	useCloudSQLConnector   bool
 	instanceConnectionName string // project:region:instance for Cloud SQL
-	user                 string
-	password             string
-	database             string
-	usePrivateIP         bool   // whether to use private IP for Cloud SQL
-	proxyManager         *ProxyManager // manages Cloud SQL Proxy process
-	sshTunnel            *SSHTunnelManager // manages SSH tunnel through bastion
-	
+	user                   string
+	password               string
+	database               string
+	usePrivateIP           bool              // whether to use private IP for Cloud SQL
+	proxyManager           *ProxyManager     // manages Cloud SQL Proxy process
+	sshTunnel              *SSHTunnelManager // manages SSH tunnel through bastion
+	sslConfig              *SSLConfig        // SSL configuration
+
 	// Direct connection fields
 	connectionString string
 }
@@ -38,11 +39,11 @@ type InspectorConfig struct {
 	UseProxy               bool // if true, starts Cloud SQL Proxy in background
 	UseGcloudProxy         bool // if true, uses gcloud instead of cloud-sql-proxy binary
 	ProxyPort              int  // local port for proxy (default: 5432)
-	
+
 	// Direct connection (alternative)
-	Host     string
-	Port     int
-	
+	Host string
+	Port int
+
 	// Common fields
 	User     string
 	Password string
@@ -66,12 +67,12 @@ type DatabaseSchema struct {
 
 // Role represents a PostgreSQL role/user
 type Role struct {
-	Name       string
-	IsSuperuser bool
-	CanLogin    bool
-	CanCreateDB bool
+	Name          string
+	IsSuperuser   bool
+	CanLogin      bool
+	CanCreateDB   bool
 	CanCreateRole bool
-	MemberOf    []string
+	MemberOf      []string
 }
 
 // TableInfo contains table metadata
@@ -121,14 +122,14 @@ type ViewInfo struct {
 
 // SequenceInfo contains sequence metadata
 type SequenceInfo struct {
-	Schema    string
-	Name      string
-	Owner     string
-	DataType  string
+	Schema     string
+	Name       string
+	Owner      string
+	DataType   string
 	StartValue int64
-	MinValue  *int64
-	MaxValue  *int64
-	Increment int64
+	MinValue   *int64
+	MaxValue   *int64
+	Increment  int64
 }
 
 // FunctionInfo contains function metadata
@@ -164,7 +165,7 @@ func NewDatabaseInspector(host, user, password, database string, port int) *Data
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=require",
 		host, port, user, password, database)
 	return &DatabaseInspector{
-		connectionString: connStr,
+		connectionString:     connStr,
 		useCloudSQLConnector: false,
 	}
 }
@@ -172,11 +173,11 @@ func NewDatabaseInspector(host, user, password, database string, port int) *Data
 // NewCloudSQLInspector creates a new database inspector using Cloud SQL connector
 func NewCloudSQLInspector(instanceConnectionName, user, password, database string) *DatabaseInspector {
 	return &DatabaseInspector{
-		useCloudSQLConnector: true,
+		useCloudSQLConnector:   true,
 		instanceConnectionName: instanceConnectionName,
-		user:     user,
-		password: password,
-		database: database,
+		user:                   user,
+		password:               password,
+		database:               database,
 	}
 }
 
@@ -185,14 +186,14 @@ func NewInspectorFromConnectionConfig(config *ConnectionConfig) (*DatabaseInspec
 	if err := config.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid connection config: %w", err)
 	}
-	
+
 	connName := config.GetConnectionName()
-	
+
 	// For private IP, we need to use the proxy approach
 	if config.UsePrivateIP {
 		return NewInspectorWithProxy(connName, config.Username, config.Password, config.Database, config.UsePrivateIP)
 	}
-	
+
 	return &DatabaseInspector{
 		useCloudSQLConnector:   true,
 		instanceConnectionName: connName,
@@ -208,14 +209,32 @@ func NewInspectorFromDatabaseConnection(conn *DatabaseConnection) (*DatabaseInsp
 	if err := conn.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid connection config: %w", err)
 	}
-	
+
 	// Check if SSH tunnel is configured
 	if conn.SSHTunnel != nil && conn.SSHTunnel.Enabled {
-		return NewInspectorWithSSHTunnel(conn)
+		inspector, err := NewInspectorWithSSHTunnel(conn)
+		if err != nil {
+			return nil, err
+		}
+		// Add SSL config if provided
+		if conn.SSLConfig != nil && conn.SSLConfig.Enabled {
+			inspector.sslConfig = conn.SSLConfig
+		}
+		return inspector, nil
 	}
-	
+
 	// Otherwise use the standard connection config path
-	return NewInspectorFromConnectionConfig(conn.ToConnectionConfig())
+	inspector, err := NewInspectorFromConnectionConfig(conn.ToConnectionConfig())
+	if err != nil {
+		return nil, err
+	}
+
+	// Add SSL config if provided
+	if conn.SSLConfig != nil && conn.SSLConfig.Enabled {
+		inspector.sslConfig = conn.SSLConfig
+	}
+
+	return inspector, nil
 }
 
 // NewInspectorWithSSHTunnel creates a new inspector that uses SSH tunnel through bastion
@@ -225,7 +244,7 @@ func NewInspectorWithSSHTunnel(conn *DatabaseConnection) (*DatabaseInspector, er
 	if err != nil {
 		return nil, fmt.Errorf("failed to create SSH tunnel manager: %w", err)
 	}
-	
+
 	// Connection will go through the SSH tunnel
 	// The tunnel manager will provide the connection string
 	return &DatabaseInspector{
@@ -236,6 +255,7 @@ func NewInspectorWithSSHTunnel(conn *DatabaseConnection) (*DatabaseInspector, er
 		database:               conn.Database,
 		usePrivateIP:           true,
 		sshTunnel:              sshTunnel,
+		sslConfig:              conn.SSLConfig,
 		connectionString:       "", // Will be set when tunnel is established
 	}, nil
 }
@@ -249,14 +269,14 @@ func NewInspectorWithProxy(instanceConnectionName, user, password, database stri
 		UsePrivateIP:           usePrivateIP,
 		UseGcloud:              false, // Use cloud-sql-proxy binary
 	}
-	
+
 	proxyManager := NewProxyManager(proxyConfig)
-	
+
 	// Create direct connection string to localhost (proxy will handle the tunnel)
 	// Increase timeouts for Cloud SQL proxy connections
 	connStr := fmt.Sprintf("host=localhost port=%d user=%s password=%s dbname=%s sslmode=disable connect_timeout=60 statement_timeout=60000",
 		proxyConfig.LocalPort, user, password, database)
-	
+
 	return &DatabaseInspector{
 		useCloudSQLConnector:   false, // Use direct connection to proxy
 		instanceConnectionName: instanceConnectionName,
@@ -284,11 +304,17 @@ func (di *DatabaseInspector) InspectDatabase(ctx context.Context) (*DatabaseSche
 			}
 		}()
 		fmt.Println("SSH tunnel established successfully")
-		
-		// Set connection string to use the tunnel
-		di.connectionString = di.sshTunnel.GetConnectionString(di.user, di.password, di.database)
+
+		// Set connection string to use the tunnel with SSL if configured
+		if di.sslConfig != nil && di.sslConfig.Enabled {
+			di.connectionString = di.sshTunnel.GetConnectionStringWithSSL(di.user, di.password, di.database, di.sslConfig)
+			fmt.Printf("SSL enabled: mode=%s, ca=%s, cert=%s, key=%s\n",
+				di.sslConfig.SSLMode, di.sslConfig.ServerCA, di.sslConfig.ClientCert, di.sslConfig.ClientKey)
+		} else {
+			di.connectionString = di.sshTunnel.GetConnectionString(di.user, di.password, di.database)
+		}
 	}
-	
+
 	// Start proxy if configured
 	if di.proxyManager != nil {
 		fmt.Printf("Starting Cloud SQL Proxy for %s...\n", di.instanceConnectionName)
@@ -303,7 +329,7 @@ func (di *DatabaseInspector) InspectDatabase(ctx context.Context) (*DatabaseSche
 		}()
 		fmt.Println("Proxy started successfully")
 	}
-	
+
 	var db *sql.DB
 	var cleanup func() error
 	var err error
@@ -313,7 +339,7 @@ func (di *DatabaseInspector) InspectDatabase(ctx context.Context) (*DatabaseSche
 	} else {
 		db, cleanup, err = di.connectDirect(ctx)
 	}
-	
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect: %w", err)
 	}
@@ -375,7 +401,7 @@ func (di *DatabaseInspector) connectWithCloudSQL(ctx context.Context) (*sql.DB, 
 	if di.usePrivateIP {
 		dialerOpts = append(dialerOpts, cloudsqlconn.WithDefaultDialOptions(cloudsqlconn.WithPrivateIP()))
 	}
-	
+
 	d, err := cloudsqlconn.NewDialer(ctx, dialerOpts...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create dialer: %w", err)
@@ -401,7 +427,7 @@ func (di *DatabaseInspector) connectWithCloudSQL(ctx context.Context) (*sql.DB, 
 
 	// Register config and get connection string
 	connStr := stdlib.RegisterConnConfig(connConfig)
-	
+
 	// Open database
 	db, err := sql.Open("pgx", connStr)
 	if err != nil {
@@ -965,14 +991,14 @@ func (a *StringArray) scanBytes(src []byte) error {
 
 	// Remove outer braces
 	str = strings.Trim(str, "{}")
-	
+
 	// Split by comma
 	parts := strings.Split(str, ",")
 	result := make([]string, len(parts))
 	for i, part := range parts {
 		result[i] = strings.Trim(part, `"`)
 	}
-	
+
 	*a = result
 	return nil
 }

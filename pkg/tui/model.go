@@ -18,13 +18,13 @@ type Tab struct {
 
 // Model represents the TUI state
 type Model struct {
-	tabs         []Tab
-	activeTab    int
-	viewport     viewport.Model
-	ready        bool
-	width        int
-	height       int
-	keyMap       KeyMap
+	tabs      []Tab
+	activeTab int
+	viewport  viewport.Model
+	ready     bool
+	width     int
+	height    int
+	keyMap    KeyMap
 }
 
 // KeyMap defines the keyboard shortcuts

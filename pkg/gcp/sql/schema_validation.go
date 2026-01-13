@@ -16,11 +16,11 @@ type SchemaValidationResult struct {
 
 // OwnershipViolation represents an object with incorrect ownership
 type OwnershipViolation struct {
-	ObjectType     string
-	ObjectName     string
-	ActualOwner    string
-	ExpectedOwner  string
-	ViolationType  string // "wrong_owner", "forbidden_owner", "database_owner"
+	ObjectType    string
+	ObjectName    string
+	ActualOwner   string
+	ExpectedOwner string
+	ViolationType string // "wrong_owner", "forbidden_owner", "database_owner"
 }
 
 // CountMismatch represents a mismatch in expected vs actual counts
@@ -174,11 +174,11 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	// Check database ownership
 	if baseline.ExpectedDatabaseOwner != "" && schema.Owner != baseline.ExpectedDatabaseOwner {
 		result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-			ObjectType:     "Database",
-			ObjectName:     schema.DatabaseName,
-			ActualOwner:    schema.Owner,
-			ExpectedOwner:  baseline.ExpectedDatabaseOwner,
-			ViolationType:  "database_owner",
+			ObjectType:    "Database",
+			ObjectName:    schema.DatabaseName,
+			ActualOwner:   schema.Owner,
+			ExpectedOwner: baseline.ExpectedDatabaseOwner,
+			ViolationType: "database_owner",
 		})
 	}
 
@@ -187,7 +187,7 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	for _, owner := range baseline.AllowedOwners {
 		allowedOwnersMap[owner] = true
 	}
-	
+
 	forbiddenOwnersMap := make(map[string]bool)
 	for _, owner := range baseline.ForbiddenOwners {
 		forbiddenOwnersMap[owner] = true
@@ -195,29 +195,29 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 
 	for _, table := range schema.Tables {
 		tableName := fmt.Sprintf("%s.%s", table.Schema, table.Name)
-		
+
 		// Check for forbidden owners
 		if forbiddenOwnersMap[table.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Table",
-				ObjectName:     tableName,
-				ActualOwner:    table.Owner,
-				ExpectedOwner:  "(any non-forbidden owner)",
-				ViolationType:  "forbidden_owner",
+				ObjectType:    "Table",
+				ObjectName:    tableName,
+				ActualOwner:   table.Owner,
+				ExpectedOwner: "(any non-forbidden owner)",
+				ViolationType: "forbidden_owner",
 			})
 			continue
 		}
-		
+
 		// Check specific exception first
 		if baseline.TableOwnerExceptions != nil {
 			if expectedOwner, hasException := baseline.TableOwnerExceptions[tableName]; hasException {
 				if table.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "Table",
-						ObjectName:     tableName,
-						ActualOwner:    table.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "Table",
+						ObjectName:    tableName,
+						ActualOwner:   table.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
@@ -226,36 +226,36 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 			if expectedOwner, hasException := baseline.TableOwnerExceptions[table.Name]; hasException {
 				if table.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "Table",
-						ObjectName:     tableName,
-						ActualOwner:    table.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "Table",
+						ObjectName:    tableName,
+						ActualOwner:   table.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
 			}
 		}
-		
+
 		// Check against expected table owner
 		if baseline.ExpectedTableOwner != "" && table.Owner != baseline.ExpectedTableOwner {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Table",
-				ObjectName:     tableName,
-				ActualOwner:    table.Owner,
-				ExpectedOwner:  baseline.ExpectedTableOwner,
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Table",
+				ObjectName:    tableName,
+				ActualOwner:   table.Owner,
+				ExpectedOwner: baseline.ExpectedTableOwner,
+				ViolationType: "wrong_owner",
 			})
 		}
-		
+
 		// Check against allowed owners (if specified)
 		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[table.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Table",
-				ObjectName:     tableName,
-				ActualOwner:    table.Owner,
-				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Table",
+				ObjectName:    tableName,
+				ActualOwner:   table.Owner,
+				ExpectedOwner: fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType: "wrong_owner",
 			})
 		}
 	}
@@ -263,29 +263,29 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	// Check view ownership
 	for _, view := range schema.Views {
 		viewName := fmt.Sprintf("%s.%s", view.Schema, view.Name)
-		
+
 		// Check for forbidden owners
 		if forbiddenOwnersMap[view.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "View",
-				ObjectName:     viewName,
-				ActualOwner:    view.Owner,
-				ExpectedOwner:  "(any non-forbidden owner)",
-				ViolationType:  "forbidden_owner",
+				ObjectType:    "View",
+				ObjectName:    viewName,
+				ActualOwner:   view.Owner,
+				ExpectedOwner: "(any non-forbidden owner)",
+				ViolationType: "forbidden_owner",
 			})
 			continue
 		}
-		
+
 		// Check specific exception first
 		if baseline.ViewOwnerExceptions != nil {
 			if expectedOwner, hasException := baseline.ViewOwnerExceptions[viewName]; hasException {
 				if view.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "View",
-						ObjectName:     viewName,
-						ActualOwner:    view.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "View",
+						ObjectName:    viewName,
+						ActualOwner:   view.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
@@ -293,36 +293,36 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 			if expectedOwner, hasException := baseline.ViewOwnerExceptions[view.Name]; hasException {
 				if view.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "View",
-						ObjectName:     viewName,
-						ActualOwner:    view.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "View",
+						ObjectName:    viewName,
+						ActualOwner:   view.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
 			}
 		}
-		
+
 		// Check against expected view owner
 		if baseline.ExpectedViewOwner != "" && view.Owner != baseline.ExpectedViewOwner {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "View",
-				ObjectName:     viewName,
-				ActualOwner:    view.Owner,
-				ExpectedOwner:  baseline.ExpectedViewOwner,
-				ViolationType:  "wrong_owner",
+				ObjectType:    "View",
+				ObjectName:    viewName,
+				ActualOwner:   view.Owner,
+				ExpectedOwner: baseline.ExpectedViewOwner,
+				ViolationType: "wrong_owner",
 			})
 		}
-		
+
 		// Check against allowed owners (if specified)
 		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[view.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "View",
-				ObjectName:     viewName,
-				ActualOwner:    view.Owner,
-				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
-				ViolationType:  "wrong_owner",
+				ObjectType:    "View",
+				ObjectName:    viewName,
+				ActualOwner:   view.Owner,
+				ExpectedOwner: fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType: "wrong_owner",
 			})
 		}
 	}
@@ -330,50 +330,50 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	// Check sequence ownership
 	for _, seq := range schema.Sequences {
 		seqName := fmt.Sprintf("%s.%s", seq.Schema, seq.Name)
-		
+
 		if forbiddenOwnersMap[seq.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Sequence",
-				ObjectName:     seqName,
-				ActualOwner:    seq.Owner,
-				ExpectedOwner:  "(any non-forbidden owner)",
-				ViolationType:  "forbidden_owner",
+				ObjectType:    "Sequence",
+				ObjectName:    seqName,
+				ActualOwner:   seq.Owner,
+				ExpectedOwner: "(any non-forbidden owner)",
+				ViolationType: "forbidden_owner",
 			})
 			continue
 		}
-		
+
 		if baseline.SequenceOwnerExceptions != nil {
 			if expectedOwner, hasException := baseline.SequenceOwnerExceptions[seqName]; hasException {
 				if seq.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "Sequence",
-						ObjectName:     seqName,
-						ActualOwner:    seq.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "Sequence",
+						ObjectName:    seqName,
+						ActualOwner:   seq.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
 			}
 		}
-		
+
 		if baseline.ExpectedSequenceOwner != "" && seq.Owner != baseline.ExpectedSequenceOwner {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Sequence",
-				ObjectName:     seqName,
-				ActualOwner:    seq.Owner,
-				ExpectedOwner:  baseline.ExpectedSequenceOwner,
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Sequence",
+				ObjectName:    seqName,
+				ActualOwner:   seq.Owner,
+				ExpectedOwner: baseline.ExpectedSequenceOwner,
+				ViolationType: "wrong_owner",
 			})
 		}
-		
+
 		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[seq.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Sequence",
-				ObjectName:     seqName,
-				ActualOwner:    seq.Owner,
-				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Sequence",
+				ObjectName:    seqName,
+				ActualOwner:   seq.Owner,
+				ExpectedOwner: fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType: "wrong_owner",
 			})
 		}
 	}
@@ -381,50 +381,50 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	// Check function ownership
 	for _, fn := range schema.Functions {
 		fnName := fmt.Sprintf("%s.%s(%s)", fn.Schema, fn.Name, fn.Arguments)
-		
+
 		if forbiddenOwnersMap[fn.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Function",
-				ObjectName:     fnName,
-				ActualOwner:    fn.Owner,
-				ExpectedOwner:  "(any non-forbidden owner)",
-				ViolationType:  "forbidden_owner",
+				ObjectType:    "Function",
+				ObjectName:    fnName,
+				ActualOwner:   fn.Owner,
+				ExpectedOwner: "(any non-forbidden owner)",
+				ViolationType: "forbidden_owner",
 			})
 			continue
 		}
-		
+
 		if baseline.FunctionOwnerExceptions != nil {
 			if expectedOwner, hasException := baseline.FunctionOwnerExceptions[fnName]; hasException {
 				if fn.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "Function",
-						ObjectName:     fnName,
-						ActualOwner:    fn.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "Function",
+						ObjectName:    fnName,
+						ActualOwner:   fn.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
 			}
 		}
-		
+
 		if baseline.ExpectedFunctionOwner != "" && fn.Owner != baseline.ExpectedFunctionOwner {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Function",
-				ObjectName:     fnName,
-				ActualOwner:    fn.Owner,
-				ExpectedOwner:  baseline.ExpectedFunctionOwner,
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Function",
+				ObjectName:    fnName,
+				ActualOwner:   fn.Owner,
+				ExpectedOwner: baseline.ExpectedFunctionOwner,
+				ViolationType: "wrong_owner",
 			})
 		}
-		
+
 		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[fn.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Function",
-				ObjectName:     fnName,
-				ActualOwner:    fn.Owner,
-				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Function",
+				ObjectName:    fnName,
+				ActualOwner:   fn.Owner,
+				ExpectedOwner: fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType: "wrong_owner",
 			})
 		}
 	}
@@ -432,50 +432,50 @@ func ValidateSchemaAgainstBaseline(schema *DatabaseSchema, baseline *SchemaBasel
 	// Check procedure ownership
 	for _, proc := range schema.Procedures {
 		procName := fmt.Sprintf("%s.%s(%s)", proc.Schema, proc.Name, proc.Arguments)
-		
+
 		if forbiddenOwnersMap[proc.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Procedure",
-				ObjectName:     procName,
-				ActualOwner:    proc.Owner,
-				ExpectedOwner:  "(any non-forbidden owner)",
-				ViolationType:  "forbidden_owner",
+				ObjectType:    "Procedure",
+				ObjectName:    procName,
+				ActualOwner:   proc.Owner,
+				ExpectedOwner: "(any non-forbidden owner)",
+				ViolationType: "forbidden_owner",
 			})
 			continue
 		}
-		
+
 		if baseline.ProcedureOwnerExceptions != nil {
 			if expectedOwner, hasException := baseline.ProcedureOwnerExceptions[procName]; hasException {
 				if proc.Owner != expectedOwner {
 					result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-						ObjectType:     "Procedure",
-						ObjectName:     procName,
-						ActualOwner:    proc.Owner,
-						ExpectedOwner:  expectedOwner,
-						ViolationType:  "wrong_owner",
+						ObjectType:    "Procedure",
+						ObjectName:    procName,
+						ActualOwner:   proc.Owner,
+						ExpectedOwner: expectedOwner,
+						ViolationType: "wrong_owner",
 					})
 				}
 				continue
 			}
 		}
-		
+
 		if baseline.ExpectedProcedureOwner != "" && proc.Owner != baseline.ExpectedProcedureOwner {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Procedure",
-				ObjectName:     procName,
-				ActualOwner:    proc.Owner,
-				ExpectedOwner:  baseline.ExpectedProcedureOwner,
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Procedure",
+				ObjectName:    procName,
+				ActualOwner:   proc.Owner,
+				ExpectedOwner: baseline.ExpectedProcedureOwner,
+				ViolationType: "wrong_owner",
 			})
 		}
-		
+
 		if len(baseline.AllowedOwners) > 0 && !allowedOwnersMap[proc.Owner] {
 			result.OwnershipViolations = append(result.OwnershipViolations, OwnershipViolation{
-				ObjectType:     "Procedure",
-				ObjectName:     procName,
-				ActualOwner:    proc.Owner,
-				ExpectedOwner:  fmt.Sprintf("one of: %v", baseline.AllowedOwners),
-				ViolationType:  "wrong_owner",
+				ObjectType:    "Procedure",
+				ObjectName:    procName,
+				ActualOwner:   proc.Owner,
+				ExpectedOwner: fmt.Sprintf("one of: %v", baseline.AllowedOwners),
+				ViolationType: "wrong_owner",
 			})
 		}
 	}

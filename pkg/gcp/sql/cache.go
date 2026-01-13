@@ -29,12 +29,12 @@ func NewSchemaCache(cacheDir string) (*SchemaCache, error) {
 		// Default to .drift-cache in current directory
 		cacheDir = ".drift-cache/database-schemas"
 	}
-	
+
 	// Create cache directory if it doesn't exist
 	if err := os.MkdirAll(cacheDir, 0755); err != nil {
 		return nil, fmt.Errorf("failed to create cache directory: %w", err)
 	}
-	
+
 	return &SchemaCache{
 		cacheDir: cacheDir,
 	}, nil
@@ -48,20 +48,20 @@ func (sc *SchemaCache) Save(connectionName string, database string, schema *Data
 		Timestamp:      time.Now(),
 		Schema:         schema,
 	}
-	
+
 	filename := sc.getCacheFilename(connectionName, database)
 	filepath := filepath.Join(sc.cacheDir, filename)
-	
+
 	// Save as JSON for better performance
 	data, err := json.MarshalIndent(cached, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to marshal schema: %w", err)
 	}
-	
+
 	if err := os.WriteFile(filepath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write cache file: %w", err)
 	}
-	
+
 	fmt.Printf("Cached schema to: %s\n", filepath)
 	return nil
 }
@@ -70,7 +70,7 @@ func (sc *SchemaCache) Save(connectionName string, database string, schema *Data
 func (sc *SchemaCache) Load(connectionName string, database string) (*CachedSchema, error) {
 	filename := sc.getCacheFilename(connectionName, database)
 	filepath := filepath.Join(sc.cacheDir, filename)
-	
+
 	data, err := os.ReadFile(filepath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -78,12 +78,12 @@ func (sc *SchemaCache) Load(connectionName string, database string) (*CachedSche
 		}
 		return nil, fmt.Errorf("failed to read cache file: %w", err)
 	}
-	
+
 	var cached CachedSchema
 	if err := json.Unmarshal(data, &cached); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal cache: %w", err)
 	}
-	
+
 	return &cached, nil
 }
 
@@ -91,7 +91,7 @@ func (sc *SchemaCache) Load(connectionName string, database string) (*CachedSche
 func (sc *SchemaCache) Exists(connectionName string, database string) bool {
 	filename := sc.getCacheFilename(connectionName, database)
 	filepath := filepath.Join(sc.cacheDir, filename)
-	
+
 	_, err := os.Stat(filepath)
 	return err == nil
 }
@@ -102,7 +102,7 @@ func (sc *SchemaCache) GetAge(connectionName string, database string) (time.Dura
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return time.Since(cached.Timestamp), nil
 }
 
@@ -112,26 +112,26 @@ func (sc *SchemaCache) List() ([]CachedSchema, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read cache directory: %w", err)
 	}
-	
+
 	var schemas []CachedSchema
 	for _, file := range files {
 		if file.IsDir() || filepath.Ext(file.Name()) != ".json" {
 			continue
 		}
-		
+
 		data, err := os.ReadFile(filepath.Join(sc.cacheDir, file.Name()))
 		if err != nil {
 			continue
 		}
-		
+
 		var cached CachedSchema
 		if err := json.Unmarshal(data, &cached); err != nil {
 			continue
 		}
-		
+
 		schemas = append(schemas, cached)
 	}
-	
+
 	return schemas, nil
 }
 
@@ -139,14 +139,14 @@ func (sc *SchemaCache) List() ([]CachedSchema, error) {
 func (sc *SchemaCache) Delete(connectionName string, database string) error {
 	filename := sc.getCacheFilename(connectionName, database)
 	filepath := filepath.Join(sc.cacheDir, filename)
-	
+
 	if err := os.Remove(filepath); err != nil {
 		if os.IsNotExist(err) {
 			return nil // Already deleted
 		}
 		return fmt.Errorf("failed to delete cache file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -156,7 +156,7 @@ func (sc *SchemaCache) Clear() error {
 	if err != nil {
 		return fmt.Errorf("failed to read cache directory: %w", err)
 	}
-	
+
 	for _, file := range files {
 		if !file.IsDir() {
 			filepath := filepath.Join(sc.cacheDir, file.Name())
@@ -165,7 +165,7 @@ func (sc *SchemaCache) Clear() error {
 			}
 		}
 	}
-	
+
 	return nil
 }
 
@@ -175,16 +175,16 @@ func (sc *SchemaCache) ExportYAML(connectionName string, database string, output
 	if err != nil {
 		return err
 	}
-	
+
 	data, err := yaml.Marshal(cached)
 	if err != nil {
 		return fmt.Errorf("failed to marshal to YAML: %w", err)
 	}
-	
+
 	if err := os.WriteFile(outputPath, data, 0644); err != nil {
 		return fmt.Errorf("failed to write YAML file: %w", err)
 	}
-	
+
 	return nil
 }
 
@@ -207,20 +207,20 @@ func CompareSchemas(old *DatabaseSchema, new *DatabaseSchema) *SchemaDiff {
 		OldTimestamp: old.DatabaseName,
 		NewTimestamp: new.DatabaseName,
 	}
-	
+
 	// Compare tables
 	oldTables := make(map[string]TableInfo)
 	for _, t := range old.Tables {
 		key := fmt.Sprintf("%s.%s", t.Schema, t.Name)
 		oldTables[key] = t
 	}
-	
+
 	newTables := make(map[string]TableInfo)
 	for _, t := range new.Tables {
 		key := fmt.Sprintf("%s.%s", t.Schema, t.Name)
 		newTables[key] = t
 	}
-	
+
 	// Find added and modified tables
 	for key, newTable := range newTables {
 		if oldTable, exists := oldTables[key]; !exists {
@@ -232,19 +232,19 @@ func CompareSchemas(old *DatabaseSchema, new *DatabaseSchema) *SchemaDiff {
 			}
 		}
 	}
-	
+
 	// Find deleted tables
 	for key, oldTable := range oldTables {
 		if _, exists := newTables[key]; !exists {
 			diff.DeletedTables = append(diff.DeletedTables, oldTable)
 		}
 	}
-	
+
 	// Similar logic for views, roles, extensions
 	diff.compareViews(old.Views, new.Views)
 	diff.compareRoles(old.Roles, new.Roles)
 	diff.compareExtensions(old.Extensions, new.Extensions)
-	
+
 	return diff
 }
 
@@ -252,17 +252,17 @@ func CompareSchemas(old *DatabaseSchema, new *DatabaseSchema) *SchemaDiff {
 type SchemaDiff struct {
 	OldTimestamp string `json:"old_timestamp" yaml:"old_timestamp"`
 	NewTimestamp string `json:"new_timestamp" yaml:"new_timestamp"`
-	
+
 	AddedTables    []TableInfo `json:"added_tables,omitempty" yaml:"added_tables,omitempty"`
 	DeletedTables  []TableInfo `json:"deleted_tables,omitempty" yaml:"deleted_tables,omitempty"`
 	ModifiedTables []TableInfo `json:"modified_tables,omitempty" yaml:"modified_tables,omitempty"`
-	
-	AddedViews    []ViewInfo `json:"added_views,omitempty" yaml:"added_views,omitempty"`
-	DeletedViews  []ViewInfo `json:"deleted_views,omitempty" yaml:"deleted_views,omitempty"`
-	
+
+	AddedViews   []ViewInfo `json:"added_views,omitempty" yaml:"added_views,omitempty"`
+	DeletedViews []ViewInfo `json:"deleted_views,omitempty" yaml:"deleted_views,omitempty"`
+
 	AddedRoles   []string `json:"added_roles,omitempty" yaml:"added_roles,omitempty"`
 	DeletedRoles []string `json:"deleted_roles,omitempty" yaml:"deleted_roles,omitempty"`
-	
+
 	AddedExtensions   []Extension `json:"added_extensions,omitempty" yaml:"added_extensions,omitempty"`
 	DeletedExtensions []Extension `json:"deleted_extensions,omitempty" yaml:"deleted_extensions,omitempty"`
 }
@@ -273,19 +273,19 @@ func (sd *SchemaDiff) compareViews(old []ViewInfo, new []ViewInfo) {
 		key := fmt.Sprintf("%s.%s", v.Schema, v.Name)
 		oldViews[key] = v
 	}
-	
+
 	newViews := make(map[string]ViewInfo)
 	for _, v := range new {
 		key := fmt.Sprintf("%s.%s", v.Schema, v.Name)
 		newViews[key] = v
 	}
-	
+
 	for key, newView := range newViews {
 		if _, exists := oldViews[key]; !exists {
 			sd.AddedViews = append(sd.AddedViews, newView)
 		}
 	}
-	
+
 	for key, oldView := range oldViews {
 		if _, exists := newViews[key]; !exists {
 			sd.DeletedViews = append(sd.DeletedViews, oldView)
@@ -298,18 +298,18 @@ func (sd *SchemaDiff) compareRoles(old []Role, new []Role) {
 	for _, r := range old {
 		oldRoles[r.Name] = true
 	}
-	
+
 	newRoles := make(map[string]bool)
 	for _, r := range new {
 		newRoles[r.Name] = true
 	}
-	
+
 	for role := range newRoles {
 		if !oldRoles[role] {
 			sd.AddedRoles = append(sd.AddedRoles, role)
 		}
 	}
-	
+
 	for role := range oldRoles {
 		if !newRoles[role] {
 			sd.DeletedRoles = append(sd.DeletedRoles, role)
@@ -322,18 +322,18 @@ func (sd *SchemaDiff) compareExtensions(old []Extension, new []Extension) {
 	for _, e := range old {
 		oldExts[e.Name] = e
 	}
-	
+
 	newExts := make(map[string]Extension)
 	for _, e := range new {
 		newExts[e.Name] = e
 	}
-	
+
 	for name, newExt := range newExts {
 		if _, exists := oldExts[name]; !exists {
 			sd.AddedExtensions = append(sd.AddedExtensions, newExt)
 		}
 	}
-	
+
 	for name, oldExt := range oldExts {
 		if _, exists := newExts[name]; !exists {
 			sd.DeletedExtensions = append(sd.DeletedExtensions, oldExt)

@@ -10,7 +10,7 @@ import (
 
 // ProxyManager manages Cloud SQL Proxy or gcloud proxy processes
 type ProxyManager struct {
-	cmd             *exec.Cmd
+	cmd              *exec.Cmd
 	instanceConnName string
 	localPort        int
 	usePrivateIP     bool
@@ -20,7 +20,7 @@ type ProxyManager struct {
 // ProxyConfig configures the proxy manager
 type ProxyConfig struct {
 	InstanceConnectionName string
-	LocalPort              int  // Local port to bind (default: 5432)
+	LocalPort              int // Local port to bind (default: 5432)
 	UsePrivateIP           bool
 	UseGcloud              bool // Use gcloud command instead of cloud-sql-proxy binary
 }
@@ -30,7 +30,7 @@ func NewProxyManager(config ProxyConfig) *ProxyManager {
 	if config.LocalPort == 0 {
 		config.LocalPort = 5432
 	}
-	
+
 	return &ProxyManager{
 		instanceConnName: config.InstanceConnectionName,
 		localPort:        config.LocalPort,
@@ -65,15 +65,15 @@ func (pm *ProxyManager) waitForProxy(maxWait time.Duration) error {
 func (pm *ProxyManager) startGcloudProxy(ctx context.Context) error {
 	// gcloud sql connect is interactive, we need cloud-sql-proxy or alpha sql proxy
 	// Use: gcloud beta sql connect with --tunnel flag OR cloud_sql_proxy
-	
+
 	// Extract components from connection name
 	project := pm.getProject()
 	instance := pm.getInstanceName()
-	
+
 	if project == "" || instance == "" {
 		return fmt.Errorf("invalid connection name format, expected project:region:instance")
 	}
-	
+
 	// Use gcloud beta sql proxy (formerly alpha)
 	args := []string{
 		"beta",
@@ -83,21 +83,21 @@ func (pm *ProxyManager) startGcloudProxy(ctx context.Context) error {
 		"--project", project,
 		"--port", fmt.Sprintf("%d", pm.localPort),
 	}
-	
+
 	if pm.usePrivateIP {
 		args = append(args, "--private-ip")
 	}
-	
+
 	pm.cmd = exec.CommandContext(ctx, "gcloud", args...)
-	
+
 	if err := pm.cmd.Start(); err != nil {
 		return fmt.Errorf("failed to start gcloud proxy: %w", err)
 	}
-	
+
 	// Wait longer for the proxy to initialize and be ready
 	fmt.Println("Waiting for proxy to be ready...")
 	time.Sleep(8 * time.Second)
-	
+
 	return nil
 }
 
@@ -106,18 +106,18 @@ func (pm *ProxyManager) startCloudSQLProxy(ctx context.Context) error {
 	// cloud-sql-proxy v2 syntax:
 	// cloud-sql-proxy --port 5432 PROJECT:REGION:INSTANCE
 	// With private IP: add --private-ip flag
-	
+
 	args := []string{
 		fmt.Sprintf("--port=%d", pm.localPort),
 	}
-	
+
 	if pm.usePrivateIP {
 		args = append(args, "--private-ip")
 	}
-	
+
 	// Add instance connection name at the end
 	args = append(args, pm.instanceConnName)
-	
+
 	// Try different possible binary names/paths
 	binaryNames := []string{
 		"cloud-sql-proxy",
@@ -125,26 +125,26 @@ func (pm *ProxyManager) startCloudSQLProxy(ctx context.Context) error {
 		"./cloud-sql-proxy",
 		"/nix/store/jrh7phms8710mlmhfpfwjwlg5nawj3mi-google-cloud-sql-proxy-2.19.0/bin/cloud-sql-proxy",
 	}
-	
+
 	var lastErr error
 	for _, binary := range binaryNames {
 		pm.cmd = exec.CommandContext(ctx, binary, args...)
 		if err := pm.cmd.Start(); err == nil {
 			// Wait for the proxy to be ready by checking port
 			fmt.Printf("Started %s (PID: %d), waiting for it to be ready...\n", binary, pm.cmd.Process.Pid)
-			
+
 			if err := pm.waitForProxy(30 * time.Second); err != nil {
 				pm.cmd.Process.Kill()
 				return fmt.Errorf("proxy failed to become ready: %w", err)
 			}
-			
+
 			fmt.Println("Proxy process is running and ready")
 			return nil
 		} else {
 			lastErr = err
 		}
 	}
-	
+
 	return fmt.Errorf("failed to start cloud-sql-proxy (tried %v): %w", binaryNames, lastErr)
 }
 
@@ -153,14 +153,14 @@ func (pm *ProxyManager) Stop() error {
 	if pm.cmd == nil || pm.cmd.Process == nil {
 		return nil
 	}
-	
+
 	if err := pm.cmd.Process.Kill(); err != nil {
 		return fmt.Errorf("failed to kill proxy process: %w", err)
 	}
-	
+
 	// Wait for process to exit
 	_ = pm.cmd.Wait()
-	
+
 	return nil
 }
 
@@ -169,7 +169,7 @@ func (pm *ProxyManager) IsRunning() bool {
 	if pm.cmd == nil || pm.cmd.Process == nil {
 		return false
 	}
-	
+
 	// Check if process still exists
 	return pm.cmd.ProcessState == nil || !pm.cmd.ProcessState.Exited()
 }
@@ -203,7 +203,7 @@ func (pm *ProxyManager) getProject() string {
 func splitConnectionName(connName string) []string {
 	result := make([]string, 0, 3)
 	current := ""
-	
+
 	for _, char := range connName {
 		if char == ':' {
 			result = append(result, current)
@@ -212,10 +212,10 @@ func splitConnectionName(connName string) []string {
 			current += string(char)
 		}
 	}
-	
+
 	if current != "" {
 		result = append(result, current)
 	}
-	
+
 	return result
 }

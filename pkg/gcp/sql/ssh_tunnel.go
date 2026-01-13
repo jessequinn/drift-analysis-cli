@@ -36,7 +36,7 @@ func NewSSHTunnelManager(config *SSHTunnelConfig) (*SSHTunnelManager, error) {
 	if config == nil {
 		return nil, fmt.Errorf("SSH tunnel config is nil")
 	}
-	
+
 	// Set defaults
 	if config.LocalPort == 0 {
 		// Automatically find a free port
@@ -52,7 +52,7 @@ func NewSSHTunnelManager(config *SSHTunnelConfig) (*SSHTunnelManager, error) {
 	if config.SSHKeyExpiry == "" {
 		config.SSHKeyExpiry = "1h"
 	}
-	
+
 	return &SSHTunnelManager{
 		config:      config,
 		isConnected: false,
@@ -164,7 +164,7 @@ func (stm *SSHTunnelManager) GetLocalPort() int {
 // waitForTunnel waits for the SSH tunnel to be ready by checking if the local port is listening
 func (stm *SSHTunnelManager) waitForTunnel(maxWait time.Duration) error {
 	deadline := time.Now().Add(maxWait)
-	
+
 	for time.Now().Before(deadline) {
 		// Try to connect to the local port
 		conn, err := net.DialTimeout("tcp", fmt.Sprintf("localhost:%d", stm.config.LocalPort), time.Second)
@@ -172,20 +172,48 @@ func (stm *SSHTunnelManager) waitForTunnel(maxWait time.Duration) error {
 			conn.Close()
 			return nil
 		}
-		
+
 		// Check if process is still running
 		if stm.cmd.ProcessState != nil && stm.cmd.ProcessState.Exited() {
 			return fmt.Errorf("SSH tunnel process exited unexpectedly")
 		}
-		
+
 		time.Sleep(500 * time.Millisecond)
 	}
-	
+
 	return fmt.Errorf("SSH tunnel did not become ready within %v", maxWait)
 }
 
 // GetConnectionString returns a connection string that uses the SSH tunnel
+// Default behavior: disable SSL since SSH tunnel provides encryption
 func (stm *SSHTunnelManager) GetConnectionString(user, password, database string) string {
 	return fmt.Sprintf("host=localhost port=%d user=%s password=%s dbname=%s sslmode=disable connect_timeout=60",
 		stm.config.LocalPort, user, password, database)
+}
+
+// GetConnectionStringWithSSL returns a connection string with SSL parameters
+// When using SSH tunnel, we connect to localhost but PostgreSQL still requires SSL
+func (stm *SSHTunnelManager) GetConnectionStringWithSSL(user, password, database string, sslConfig *SSLConfig) string {
+	// Connect through the SSH tunnel (localhost)
+	connStr := fmt.Sprintf("host=localhost port=%d user=%s password=%s dbname=%s connect_timeout=60",
+		stm.config.LocalPort, user, password, database)
+
+	if sslConfig != nil && sslConfig.Enabled {
+		// Use require mode - SSL encryption without hostname verification
+		// This works for SSH tunnel because we need SSL for the server but can't verify localhost
+		connStr += " sslmode=require"
+
+		// Add client cert/key for mutual TLS authentication
+		if sslConfig.ClientCert != "" {
+			connStr += fmt.Sprintf(" sslcert=%s", sslConfig.ClientCert)
+		}
+		if sslConfig.ClientKey != "" {
+			connStr += fmt.Sprintf(" sslkey=%s", sslConfig.ClientKey)
+		}
+		// Do NOT add sslrootcert - this would trigger hostname validation
+	} else {
+		connStr += " sslmode=disable"
+	}
+
+	return connStr
 }
