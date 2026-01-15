@@ -355,6 +355,12 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 	a.compareLoggingCluster(actual, baseline, drift)
 	a.compareMonitoringCluster(actual, baseline, drift)
 
+	// Addons
+	a.compareAddons(actual, baseline, drift)
+
+	// Maintenance Window
+	a.compareMaintenanceWindow(actual, baseline, drift)
+
 	// Compare master authorized networks if specified in baseline
 	if len(baseline.MasterAuthorizedNets) > 0 {
 		a.compareMasterAuthorizedNetworks(baseline, actual, drift)
@@ -430,6 +436,24 @@ func (a *Analyzer) compareCoreFeaturesCluster(actual, baseline *ClusterConfig, d
 
 // compareNetworking compares networking configuration
 func (a *Analyzer) compareNetworking(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.Network != "" && actual.Network != baseline.Network {
+		drift.Drifts = append(drift.Drifts, Drift{
+			Field:    "cluster.network",
+			Expected: baseline.Network,
+			Actual:   actual.Network,
+			Severity: "high",
+		})
+	}
+
+	if baseline.Subnetwork != "" && actual.Subnetwork != baseline.Subnetwork {
+		drift.Drifts = append(drift.Drifts, Drift{
+			Field:    "cluster.subnetwork",
+			Expected: baseline.Subnetwork,
+			Actual:   actual.Subnetwork,
+			Severity: "high",
+		})
+	}
+
 	if baseline.DatapathProvider != "" && actual.DatapathProvider != baseline.DatapathProvider {
 		drift.Drifts = append(drift.Drifts, Drift{
 			Field:    "cluster.datapath_provider",
@@ -452,6 +476,35 @@ func (a *Analyzer) compareNetworking(actual, baseline *ClusterConfig, drift *Clu
 // compareIPAllocation compares IP allocation policy
 func (a *Analyzer) compareIPAllocation(actual, baseline *ClusterConfig, drift *ClusterDrift) {
 	if baseline.IPAllocationPolicy != nil && actual.IPAllocationPolicy != nil {
+		if actual.IPAllocationPolicy.UseIPAliases != baseline.IPAllocationPolicy.UseIPAliases {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.ip_allocation_policy.use_ip_aliases",
+				Expected: fmt.Sprintf("%v", baseline.IPAllocationPolicy.UseIPAliases),
+				Actual:   fmt.Sprintf("%v", actual.IPAllocationPolicy.UseIPAliases),
+				Severity: "critical",
+			})
+		}
+
+		if baseline.IPAllocationPolicy.ClusterIPv4CIDR != "" &&
+			actual.IPAllocationPolicy.ClusterIPv4CIDR != baseline.IPAllocationPolicy.ClusterIPv4CIDR {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.ip_allocation_policy.cluster_ipv4_cidr",
+				Expected: baseline.IPAllocationPolicy.ClusterIPv4CIDR,
+				Actual:   actual.IPAllocationPolicy.ClusterIPv4CIDR,
+				Severity: "high",
+			})
+		}
+
+		if baseline.IPAllocationPolicy.ServicesIPv4CIDR != "" &&
+			actual.IPAllocationPolicy.ServicesIPv4CIDR != baseline.IPAllocationPolicy.ServicesIPv4CIDR {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.ip_allocation_policy.services_ipv4_cidr",
+				Expected: baseline.IPAllocationPolicy.ServicesIPv4CIDR,
+				Actual:   actual.IPAllocationPolicy.ServicesIPv4CIDR,
+				Severity: "high",
+			})
+		}
+
 		if baseline.IPAllocationPolicy.StackType != "" &&
 			actual.IPAllocationPolicy.StackType != baseline.IPAllocationPolicy.StackType {
 			drift.Drifts = append(drift.Drifts, Drift{
@@ -535,6 +588,76 @@ func (a *Analyzer) compareMonitoringCluster(actual, baseline *ClusterConfig, dri
 				Severity: "low",
 			})
 		}
+		if actual.MonitoringConfig.EnableControllerMetrics != baseline.MonitoringConfig.EnableControllerMetrics {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.monitoring_config.enable_controller_metrics",
+				Expected: fmt.Sprintf("%v", baseline.MonitoringConfig.EnableControllerMetrics),
+				Actual:   fmt.Sprintf("%v", actual.MonitoringConfig.EnableControllerMetrics),
+				Severity: "low",
+			})
+		}
+		if actual.MonitoringConfig.EnableSchedulerMetrics != baseline.MonitoringConfig.EnableSchedulerMetrics {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.monitoring_config.enable_scheduler_metrics",
+				Expected: fmt.Sprintf("%v", baseline.MonitoringConfig.EnableSchedulerMetrics),
+				Actual:   fmt.Sprintf("%v", actual.MonitoringConfig.EnableSchedulerMetrics),
+				Severity: "low",
+			})
+		}
+	}
+}
+
+// compareAddons compares addon configuration
+func (a *Analyzer) compareAddons(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.Addons != nil && actual.Addons != nil {
+		if actual.Addons.HTTPLoadBalancing != baseline.Addons.HTTPLoadBalancing {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.addons.http_load_balancing",
+				Expected: fmt.Sprintf("%v", baseline.Addons.HTTPLoadBalancing),
+				Actual:   fmt.Sprintf("%v", actual.Addons.HTTPLoadBalancing),
+				Severity: "low",
+			})
+		}
+		if actual.Addons.HorizontalPodAutoscaling != baseline.Addons.HorizontalPodAutoscaling {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.addons.horizontal_pod_autoscaling",
+				Expected: fmt.Sprintf("%v", baseline.Addons.HorizontalPodAutoscaling),
+				Actual:   fmt.Sprintf("%v", actual.Addons.HorizontalPodAutoscaling),
+				Severity: "low",
+			})
+		}
+		if actual.Addons.NetworkPolicy != baseline.Addons.NetworkPolicy {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.addons.network_policy",
+				Expected: fmt.Sprintf("%v", baseline.Addons.NetworkPolicy),
+				Actual:   fmt.Sprintf("%v", actual.Addons.NetworkPolicy),
+				Severity: "medium",
+			})
+		}
+	}
+}
+
+// compareMaintenanceWindow compares maintenance window configuration
+func (a *Analyzer) compareMaintenanceWindow(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.MaintenanceWindow != nil && actual.MaintenanceWindow != nil {
+		if baseline.MaintenanceWindow.StartTime != "" &&
+			actual.MaintenanceWindow.StartTime != baseline.MaintenanceWindow.StartTime {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.maintenance_window.start_time",
+				Expected: baseline.MaintenanceWindow.StartTime,
+				Actual:   actual.MaintenanceWindow.StartTime,
+				Severity: "low",
+			})
+		}
+		if baseline.MaintenanceWindow.Duration != "" &&
+			actual.MaintenanceWindow.Duration != baseline.MaintenanceWindow.Duration {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.maintenance_window.duration",
+				Expected: baseline.MaintenanceWindow.Duration,
+				Actual:   actual.MaintenanceWindow.Duration,
+				Severity: "low",
+			})
+		}
 	}
 }
 
@@ -593,6 +716,20 @@ func (a *Analyzer) compareNodePools(actualPools []*NodePoolConfig, baseline *Nod
 	for _, pool := range actualPools {
 		poolPrefix := fmt.Sprintf("nodepool[%s]", pool.Name)
 
+		// Node pool version
+		if baseline.Version != "" {
+			actualMinor := extractMinorVersion(pool.Version)
+			baselineMinor := extractMinorVersion(baseline.Version)
+			if actualMinor != baselineMinor {
+				drift.Drifts = append(drift.Drifts, Drift{
+					Field:    fmt.Sprintf("%s.version", poolPrefix),
+					Expected: baseline.Version,
+					Actual:   pool.Version,
+					Severity: "high",
+				})
+			}
+		}
+
 		// Machine type
 		if baseline.MachineType != "" && pool.MachineType != baseline.MachineType {
 			drift.Drifts = append(drift.Drifts, Drift{
@@ -613,6 +750,16 @@ func (a *Analyzer) compareNodePools(actualPools []*NodePoolConfig, baseline *Nod
 			})
 		}
 
+		// Disk type
+		if baseline.DiskType != "" && pool.DiskType != baseline.DiskType {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    fmt.Sprintf("%s.disk_type", poolPrefix),
+				Expected: baseline.DiskType,
+				Actual:   pool.DiskType,
+				Severity: "medium",
+			})
+		}
+
 		// Image type
 		if baseline.ImageType != "" && pool.ImageType != baseline.ImageType {
 			drift.Drifts = append(drift.Drifts, Drift{
@@ -621,6 +768,56 @@ func (a *Analyzer) compareNodePools(actualPools []*NodePoolConfig, baseline *Nod
 				Actual:   pool.ImageType,
 				Severity: "medium",
 			})
+		}
+
+		// Service account
+		if baseline.ServiceAccount != "" && pool.ServiceAccount != baseline.ServiceAccount {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    fmt.Sprintf("%s.service_account", poolPrefix),
+				Expected: baseline.ServiceAccount,
+				Actual:   pool.ServiceAccount,
+				Severity: "high",
+			})
+		}
+
+		// Initial node count
+		if baseline.InitialNodeCount > 0 && pool.InitialNodeCount != baseline.InitialNodeCount {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    fmt.Sprintf("%s.initial_node_count", poolPrefix),
+				Expected: fmt.Sprintf("%d", baseline.InitialNodeCount),
+				Actual:   fmt.Sprintf("%d", pool.InitialNodeCount),
+				Severity: "low",
+			})
+		}
+
+		// Autoscaling
+		if baseline.Autoscaling != nil && pool.Autoscaling != nil {
+			if pool.Autoscaling.Enabled != baseline.Autoscaling.Enabled {
+				drift.Drifts = append(drift.Drifts, Drift{
+					Field:    fmt.Sprintf("%s.autoscaling.enabled", poolPrefix),
+					Expected: fmt.Sprintf("%v", baseline.Autoscaling.Enabled),
+					Actual:   fmt.Sprintf("%v", pool.Autoscaling.Enabled),
+					Severity: "high",
+				})
+			}
+			if baseline.Autoscaling.Enabled && pool.Autoscaling.Enabled {
+				if pool.Autoscaling.MinNodeCount != baseline.Autoscaling.MinNodeCount {
+					drift.Drifts = append(drift.Drifts, Drift{
+						Field:    fmt.Sprintf("%s.autoscaling.min_node_count", poolPrefix),
+						Expected: fmt.Sprintf("%d", baseline.Autoscaling.MinNodeCount),
+						Actual:   fmt.Sprintf("%d", pool.Autoscaling.MinNodeCount),
+						Severity: "medium",
+					})
+				}
+				if pool.Autoscaling.MaxNodeCount != baseline.Autoscaling.MaxNodeCount {
+					drift.Drifts = append(drift.Drifts, Drift{
+						Field:    fmt.Sprintf("%s.autoscaling.max_node_count", poolPrefix),
+						Expected: fmt.Sprintf("%d", baseline.Autoscaling.MaxNodeCount),
+						Actual:   fmt.Sprintf("%d", pool.Autoscaling.MaxNodeCount),
+						Severity: "medium",
+					})
+				}
+			}
 		}
 
 		// Auto upgrade
