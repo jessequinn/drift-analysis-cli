@@ -96,8 +96,8 @@ func (c *Command) Execute(ctx context.Context) error {
 	for _, baseline := range baselines {
 		log.Printf("Analyzing instances against baseline: %s", baseline.Name)
 
-		// Filter instances by baseline labels
-		filteredInstances := c.filterInstances(instances, baseline.FilterLabels, filterLabels)
+		// Filter instances by baseline labels and name pattern
+		filteredInstances := c.filterInstancesByPattern(instances, baseline, filterLabels)
 
 		if len(filteredInstances) == 0 {
 			log.Printf("No instances match baseline filter for: %s", baseline.Name)
@@ -144,6 +144,78 @@ func (c *Command) filterInstances(instances []*InstanceConfig, baselineLabels, a
 		if matches {
 			filtered = append(filtered, instance)
 		}
+	}
+
+	return filtered
+}
+
+// filterInstancesByPattern filters instances by name pattern and labels
+func (c *Command) filterInstancesByPattern(instances []*InstanceConfig, baseline GCEBaseline, additionalFilters map[string]string) []*InstanceConfig {
+	var filtered []*InstanceConfig
+
+	for _, instance := range instances {
+		matches := true
+
+		// Check baseline labels first
+		for key, value := range baseline.FilterLabels {
+			if instance.Labels[key] != value {
+				matches = false
+				break
+			}
+		}
+
+		if !matches {
+			continue
+		}
+
+		// Check exclude labels - if instance has any of these, skip it
+		for key, value := range baseline.ExcludeLabels {
+			if value == "" {
+				// Empty value means "exclude if label exists (regardless of value)"
+				if _, exists := instance.Labels[key]; exists {
+					matches = false
+					break
+				}
+			} else {
+				// Non-empty value means "exclude if label matches this specific value"
+				if instance.Labels[key] == value {
+					matches = false
+					break
+				}
+			}
+		}
+
+		if !matches {
+			continue
+		}
+
+		// Check additional filters
+		for key, value := range additionalFilters {
+			if instance.Labels[key] != value {
+				matches = false
+				break
+			}
+		}
+
+		if !matches {
+			continue
+		}
+
+		// If exclude pattern is specified, skip instances matching it
+		if baseline.ExcludeNamePattern != "" {
+			if strings.Contains(instance.Name, baseline.ExcludeNamePattern) {
+				continue
+			}
+		}
+
+		// If name pattern is specified, ONLY include instances matching the pattern
+		if baseline.NamePattern != "" {
+			if !strings.Contains(instance.Name, baseline.NamePattern) {
+				continue
+			}
+		}
+
+		filtered = append(filtered, instance)
 	}
 
 	return filtered
