@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/jessequinn/drift-analysis-cli/pkg/gcp/gce"
 	"github.com/jessequinn/drift-analysis-cli/pkg/logger"
@@ -115,6 +116,70 @@ func runGCEAnalysis(cmd *cobra.Command, args []string) error {
 			logger.Debug("Instances filtered", map[string]interface{}{
 				"count":  len(instances),
 				"labels": baseline.FilterLabels,
+			})
+		}
+
+		// Filter by exclude labels if specified
+		if len(baseline.ExcludeLabels) > 0 {
+			filtered := make([]*gce.InstanceConfig, 0)
+			for _, instance := range instances {
+				exclude := false
+				for key, value := range baseline.ExcludeLabels {
+					if value == "" {
+						// Empty value means "exclude if label exists (regardless of value)"
+						if _, exists := instance.Labels[key]; exists {
+							exclude = true
+							break
+						}
+					} else {
+						// Non-empty value means "exclude if label matches this specific value"
+						if instance.Labels[key] == value {
+							exclude = true
+							break
+						}
+					}
+				}
+				if !exclude {
+					filtered = append(filtered, instance)
+				}
+			}
+			instances = filtered
+
+			logger.Debug("Instances filtered by exclude labels", map[string]interface{}{
+				"count":          len(instances),
+				"exclude_labels": baseline.ExcludeLabels,
+			})
+		}
+
+		// Filter by name pattern if specified (include only matching)
+		if baseline.NamePattern != "" {
+			filtered := make([]*gce.InstanceConfig, 0)
+			for _, instance := range instances {
+				if strings.Contains(instance.Name, baseline.NamePattern) {
+					filtered = append(filtered, instance)
+				}
+			}
+			instances = filtered
+
+			logger.Debug("Instances filtered by name pattern", map[string]interface{}{
+				"count":        len(instances),
+				"name_pattern": baseline.NamePattern,
+			})
+		}
+
+		// Filter by exclude name pattern if specified
+		if baseline.ExcludeNamePattern != "" {
+			filtered := make([]*gce.InstanceConfig, 0)
+			for _, instance := range instances {
+				if !strings.Contains(instance.Name, baseline.ExcludeNamePattern) {
+					filtered = append(filtered, instance)
+				}
+			}
+			instances = filtered
+
+			logger.Debug("Instances filtered by exclude name pattern", map[string]interface{}{
+				"count":                len(instances),
+				"exclude_name_pattern": baseline.ExcludeNamePattern,
 			})
 		}
 
