@@ -233,6 +233,10 @@ gke_baselines:
     cluster_config:
       master_version: "1.33"
       release_channel: REGULAR
+      
+      # Networking
+      network: "projects/my-project/global/networks/prod-vpc"
+      subnetwork: "projects/my-project/regions/us-central1/subnetworks/prod-subnet"
       private_cluster: true
       master_global_access: true
       datapath_provider: ADVANCED_DATAPATH
@@ -241,12 +245,20 @@ gke_baselines:
         - "10.0.0.0/24"
       
       ip_allocation_policy:
+        use_ip_aliases: true
+        cluster_ipv4_cidr: "10.100.0.0/16"
+        services_ipv4_cidr: "10.101.0.0/16"
         stack_type: IPV4_IPV6
       
+      # Security
       shielded_nodes: true
+      database_encryption: true
       security_posture: BASIC
       workload_identity: true
+      network_policy: true
+      binary_authorization: true
       
+      # Logging and Monitoring
       logging_config:
         enable_system_logs: true
         enable_workload_logs: true
@@ -254,14 +266,36 @@ gke_baselines:
       monitoring_config:
         enable_system_metrics: true
         enable_apiserver_metrics: true
+        enable_controller_metrics: true
+        enable_scheduler_metrics: true
       
-      nodepool_config:
-        machine_type: n2-standard-4
-        disk_size_gb: 100
-        disk_type: pd-ssd
-        image_type: COS_CONTAINERD
-        auto_upgrade: true
-        auto_repair: true
+      # Addons
+      addons:
+        http_load_balancing: true
+        horizontal_pod_autoscaling: true
+        network_policy: true
+      
+      # Maintenance Window
+      maintenance_window:
+        start_time: "2024-01-01T03:00:00Z"
+        duration: "4h0m0s"
+      
+    nodepool_config:
+      version: "1.33"
+      machine_type: n2-standard-4
+      disk_size_gb: 100
+      disk_type: pd-ssd
+      image_type: COS_CONTAINERD
+      service_account: "gke-nodes@my-project.iam.gserviceaccount.com"
+      initial_node_count: 3
+      
+      autoscaling:
+        enabled: true
+        min_node_count: 3
+        max_node_count: 10
+      
+      auto_upgrade: true
+      auto_repair: true
 
 # ==============================================================================
 # GCE BASELINES
