@@ -63,9 +63,12 @@ type ShieldedVMConfig struct {
 
 // GCEBaseline represents a GCE configuration baseline with optional filters
 type GCEBaseline struct {
-	Name         string            `yaml:"name,omitempty"`
-	FilterLabels map[string]string `yaml:"filter_labels,omitempty"`
-	VMConfig     *VMConfig         `yaml:"vm_config"`
+	Name               string            `yaml:"name,omitempty"`
+	FilterLabels       map[string]string `yaml:"filter_labels,omitempty"`
+	ExcludeLabels      map[string]string `yaml:"exclude_labels,omitempty"`       // Exclude instances with these labels
+	NamePattern        string            `yaml:"name_pattern,omitempty"`         // Include only instances matching this pattern
+	ExcludeNamePattern string            `yaml:"exclude_name_pattern,omitempty"` // Exclude instances matching this pattern
+	VMConfig           *VMConfig         `yaml:"vm_config"`
 }
 
 // Analyzer performs drift analysis on GCE instances
