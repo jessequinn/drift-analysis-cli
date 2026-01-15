@@ -232,7 +232,8 @@ func compareNetworkConfig(actual, baseline *NetworkConfig) []Drift {
 		})
 	}
 
-	if baseline.NetworkTier != "" && baseline.NetworkTier != actual.NetworkTier {
+	// Only check network tier if VMs have external IPs (network tier only applies to external IPs)
+	if baseline.NetworkTier != "" && baseline.ExternalIP && actual.ExternalIP && baseline.NetworkTier != actual.NetworkTier {
 		drifts = append(drifts, Drift{
 			Field:       "network_config.network_tier",
 			Expected:    baseline.NetworkTier,
@@ -302,6 +303,15 @@ func compareScopes(actual, baseline []string) []Drift {
 		baselineSet[scope] = true
 	}
 
+	// Check if cloud-platform scope is present (it's a superset that includes all other scopes)
+	hasCloudPlatform := false
+	for scope := range actualSet {
+		if strings.Contains(scope, "cloud-platform") {
+			hasCloudPlatform = true
+			break
+		}
+	}
+
 	// Check for missing scopes
 	var missing []string
 	for scope := range baselineSet {
@@ -318,6 +328,20 @@ func compareScopes(actual, baseline []string) []Drift {
 		}
 	}
 
+	// If cloud-platform is present, it's an over-permission issue (CRITICAL)
+	// Don't also report "missing" scopes since cloud-platform includes everything
+	if hasCloudPlatform {
+		drifts = append(drifts, Drift{
+			Field:       "service_account.scopes",
+			Expected:    baseline,
+			Actual:      actual,
+			Severity:    "CRITICAL",
+			Description: "Over-permissioned: cloud-platform scope grants full GCP access. Use specific scopes instead (principle of least privilege)",
+		})
+		return drifts
+	}
+
+	// Report missing scopes (only if cloud-platform is not present)
 	if len(missing) > 0 {
 		drifts = append(drifts, Drift{
 			Field:       "service_account.scopes",
@@ -328,16 +352,9 @@ func compareScopes(actual, baseline []string) []Drift {
 		})
 	}
 
-	// Extra scopes, especially cloud-platform, are critical security issues
+	// Report extra scopes (other than cloud-platform)
 	if len(extra) > 0 {
 		severity := "HIGH"
-		for _, scope := range extra {
-			if strings.Contains(scope, "cloud-platform") {
-				severity = "CRITICAL"
-				break
-			}
-		}
-
 		drifts = append(drifts, Drift{
 			Field:       "service_account.scopes",
 			Expected:    baseline,
