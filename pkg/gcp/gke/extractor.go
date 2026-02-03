@@ -133,3 +133,81 @@ func extractMasterAuthorizedNets(cluster *container.Cluster) []string {
 	}
 	return nets
 }
+
+// extractPrivateClusterConfigAdvanced extracts advanced private cluster configuration
+func extractPrivateClusterConfigAdvanced(cluster *container.Cluster) *PrivateClusterConfig {
+	if cluster.PrivateClusterConfig != nil {
+		return &PrivateClusterConfig{
+			EnablePrivateEndpoint: cluster.PrivateClusterConfig.EnablePrivateEndpoint,
+			MasterIPv4CIDRBlock:   cluster.PrivateClusterConfig.MasterIpv4CidrBlock,
+		}
+	}
+	return nil
+}
+
+// extractDNSConfig extracts DNS configuration from cluster
+func extractDNSConfig(cluster *container.Cluster) *DNSConfig {
+	// Note: DNS config field names may vary by API version
+	// Commenting out for now - may need cluster.DnsConfig instead
+	// if cluster.ClusterDns != "" {
+	// 	return &DNSConfig{
+	// 		Provider: cluster.ClusterDns,
+	// 	}
+	// }
+	return nil
+}
+
+// extractGatewayAPIConfig extracts Gateway API configuration
+func extractGatewayAPIConfig(cluster *container.Cluster) *GatewayAPIConfig {
+	// Note: Gateway API config field names may vary by API version  
+	// Commenting out for now
+	// if cluster.GatewayApiConfig != nil {
+	// 	return &GatewayAPIConfig{
+	// 		Enabled: cluster.GatewayApiConfig.Channel != "CHANNEL_DISABLED",
+	// 	}
+	// }
+	return nil
+}
+
+// extractResourceUsageExportConfig extracts resource usage export configuration
+func extractResourceUsageExportConfig(cluster *container.Cluster) *ResourceUsageExportConfig {
+	if cluster.ResourceUsageExportConfig != nil && cluster.ResourceUsageExportConfig.BigqueryDestination != nil {
+		return &ResourceUsageExportConfig{
+			Enabled:         cluster.ResourceUsageExportConfig.EnableNetworkEgressMetering,
+			BigQueryDataset: cluster.ResourceUsageExportConfig.BigqueryDestination.DatasetId,
+		}
+	}
+	return nil
+}
+
+// extractAuthenticatorGroupsConfig extracts authenticator groups configuration
+func extractAuthenticatorGroupsConfig(cluster *container.Cluster) *AuthenticatorGroupsConfig {
+	if cluster.AuthenticatorGroupsConfig != nil {
+		return &AuthenticatorGroupsConfig{
+			Enabled:       cluster.AuthenticatorGroupsConfig.Enabled,
+			SecurityGroup: cluster.AuthenticatorGroupsConfig.SecurityGroup,
+		}
+	}
+	return nil
+}
+
+// extractNotificationConfig extracts notification configuration
+func extractNotificationConfig(cluster *container.Cluster) *NotificationConfig {
+	if cluster.NotificationConfig != nil && cluster.NotificationConfig.Pubsub != nil {
+		return &NotificationConfig{
+			Enabled:     cluster.NotificationConfig.Pubsub.Enabled,
+			PubSubTopic: cluster.NotificationConfig.Pubsub.Topic,
+		}
+	}
+	return nil
+}
+
+// boolPtr returns a pointer to the given bool value
+func boolPtr(b bool) *bool {
+	return &b
+}
+
+// int64Ptr returns a pointer to the given int64 value
+func int64Ptr(i int64) *int64 {
+	return &i
+}

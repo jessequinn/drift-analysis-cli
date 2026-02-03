@@ -55,4 +55,4 @@ exports/
 # OS files
 .DS_Store
 Thumbs.db
-
+!flake.nix

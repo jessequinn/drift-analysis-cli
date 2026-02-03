@@ -280,6 +280,45 @@ gke_baselines:
         start_time: "2024-01-01T03:00:00Z"
         duration: "4h0m0s"
       
+      # Advanced Networking
+      private_cluster_config:
+        enable_private_endpoint: false  # Set true to disable public endpoint
+        master_ipv4_cidr_block: "172.16.0.0/28"
+      
+      default_max_pods_per_node: 110  # Default pod density per node
+      
+      # dns_config:  # Uncomment to enforce DNS provider
+      #   provider: CLOUD_DNS  # or KUBE_DNS
+      
+      # gateway_api_config:  # Uncomment to enforce Gateway API
+      #   enabled: true
+      
+      # Cost & Resource Management
+      autopilot: false  # Set true for Autopilot mode
+      vertical_pod_autoscaling: true
+      
+      # resource_usage_export_config:  # Uncomment for cost metering
+      #   enabled: true
+      #   bigquery_dataset: "project.usage_metering"
+      
+      # Advanced Security
+      # pod_security_policy: true  # Deprecated in K8s 1.25+
+      
+      # authenticator_groups_config:  # Uncomment for RBAC groups
+      #   enabled: true
+      #   security_group: "gke-security-groups@example.com"
+      
+      # Observability
+      # notification_config:  # Uncomment for cluster event notifications
+      #   enabled: true
+      #   pubsub_topic: "projects/my-project/topics/gke-notifications"
+      
+      managed_prometheus: true
+      
+      # Cluster Lifecycle
+      # enable_kubernetes_alpha: false  # Alpha features (not recommended for production)
+      # enable_tpu: false  # TPU support
+      
     nodepool_config:
       version: "1.33"
       machine_type: n2-standard-4
@@ -289,6 +328,10 @@ gke_baselines:
       service_account: "gke-nodes@my-project.iam.gserviceaccount.com"
       initial_node_count: 3
       
+      # Cost Optimization
+      preemptible: false  # Set true for preemptible nodes (not recommended for production)
+      spot: false         # Set true for spot instances (similar to preemptible)
+      
       autoscaling:
         enabled: true
         min_node_count: 3
@@ -296,6 +339,28 @@ gke_baselines:
       
       auto_upgrade: true
       auto_repair: true
+      
+      # Advanced Node Pool Configuration
+      # management:
+      #   upgrade_settings:
+      #     max_surge: 1        # Max nodes added during upgrade
+      #     max_unavailable: 0  # Max nodes unavailable during upgrade
+      
+      # network_config:  # Uncomment for custom pod IP range
+      #   pod_range: "gke-pods-1"
+      
+      # boot_disk_kms_key: "projects/my-project/locations/us-central1/keyRings/gke/cryptoKeys/boot-disk"
+      
+      # shielded_instance_config:
+      #   enable_secure_boot: true
+      #   enable_integrity_monitoring: true
+      
+      # linux_node_config:  # Uncomment for custom sysctls
+      #   sysctls:
+      #     net.core.somaxconn: "1024"
+      
+      # sandbox_config:  # Uncomment for gVisor sandbox
+      #   type: "gvisor"
 
 # ==============================================================================
 # GCE BASELINES

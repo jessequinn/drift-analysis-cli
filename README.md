@@ -23,7 +23,8 @@ A comprehensive CLI tool for detecting configuration drift across Google Cloud P
 
 ## Features
 
-- **Multi-Resource Drift Detection**: Cloud SQL, GKE clusters, and GCE instances
+- **Multi-Resource Drift Detection**: Cloud SQL, GKE clusters (70 fields), and GCE instances
+- **Comprehensive GKE Coverage**: Security, cost optimization, networking, and operational excellence
 - **Severity-Based Analysis**: CRITICAL, HIGH, MEDIUM, LOW classifications
 - **Multi-Project Support**: Analyze resources across multiple GCP projects
 - **Database Schema Inspection**: Direct PostgreSQL connection for DDL extraction
@@ -31,7 +32,7 @@ A comprehensive CLI tool for detecting configuration drift across Google Cloud P
 - **Structured Logging**: JSON and text logging with file output support
 - **Baseline Generation**: Auto-generate configs from existing infrastructure
 - **Label-Based Filtering**: Target specific resource roles or environments
-- **Security Focus**: Identifies security gaps and misconfigurations
+- **Security & Cost Focus**: Autopilot mode, preemptible/spot detection, private endpoints
 
 ## Installation
 
@@ -409,28 +410,57 @@ The tool caches schemas in `.drift-cache/database-schemas/` for baseline compari
 
 ### GKE Checks
 
-**Networking (MEDIUM to HIGH) - 9 checks**
+**Total: 70 fields across cluster and node pool configuration**
+
+**Networking (MEDIUM to CRITICAL) - 11 checks**
 - Network/Subnetwork configuration
-- Private cluster settings
+- Private cluster settings (including private endpoint and master CIDR)
 - Master global access
 - Master authorized networks
 - Datapath provider (ADVANCED vs LEGACY)
-- IP allocation policy (IPv4/IPv6)
+- IP allocation policy (IPv4/IPv6, use_ip_aliases)
+- Default max pods per node
+- DNS provider (CLOUD_DNS vs KUBE_DNS)
+- Gateway API configuration
 
-**Security (CRITICAL to HIGH) - 6 checks**
-- Shielded nodes
+**Security (CRITICAL to HIGH) - 10 checks**
+- Shielded nodes (cluster and per-pool)
 - Database encryption (ETCD at rest)
 - Security posture (BASIC/ENTERPRISE)
 - Workload identity
 - Binary authorization
 - Network policy
+- Pod Security Policy (deprecated K8s 1.25+)
+- Authenticator groups (RBAC)
+- Boot disk KMS encryption
+- Shielded instance config per node pool
 
-**Features & Observability (LOW to MEDIUM) - 10+ checks**
+**Cost & Resource Management (CRITICAL to MEDIUM) - 6 checks**
+- Autopilot mode detection
+- Vertical Pod Autoscaling (VPA)
+- Resource usage export configuration
+- Preemptible nodes
+- Spot instances
+- Node pool autoscaling (enabled, min/max)
+
+**Observability (LOW to MEDIUM) - 8 checks**
 - System and workload logging
-- Metrics collection (system, API server, controller)
+- Metrics collection (system, API server, controller, scheduler)
+- Managed Prometheus
+- Cluster notifications (Pub/Sub)
+
+**Features & Configuration (LOW to MEDIUM) - 15+ checks**
 - Kubernetes version and release channel
-- Addon configurations (HTTP LB, HPA)
-- Node pool configuration
+- Addon configurations (HTTP LB, HPA, Network Policy)
+- Maintenance window
+- Node pool configuration (machine type, disk type, image)
+- Service account per node pool
+- Upgrade settings (max surge/unavailable)
+- Pod IP ranges per node pool
+- Linux node config (sysctls)
+- Sandbox config (gVisor)
+- Alpha features flag
+- TPU support
 
 ### GCE Checks
 

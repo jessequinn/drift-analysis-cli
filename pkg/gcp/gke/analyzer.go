@@ -48,6 +48,29 @@ type ClusterConfig struct {
 	Addons            *AddonsConfig      `yaml:"addons,omitempty" json:"addons,omitempty"`
 	LoggingConfig     *LoggingConfig     `yaml:"logging_config,omitempty" json:"logging_config,omitempty"`
 	MonitoringConfig  *MonitoringConfig  `yaml:"monitoring_config,omitempty" json:"monitoring_config,omitempty"`
+
+	// Advanced Networking
+	PrivateClusterConfig   *PrivateClusterConfig `yaml:"private_cluster_config,omitempty" json:"private_cluster_config,omitempty"`
+	DefaultMaxPodsPerNode  *int64                `yaml:"default_max_pods_per_node,omitempty" json:"default_max_pods_per_node,omitempty"`
+	DNSConfig              *DNSConfig            `yaml:"dns_config,omitempty" json:"dns_config,omitempty"`
+	GatewayAPIConfig       *GatewayAPIConfig     `yaml:"gateway_api_config,omitempty" json:"gateway_api_config,omitempty"`
+
+	// Cost & Resource Management
+	Autopilot                 *bool                        `yaml:"autopilot,omitempty" json:"autopilot,omitempty"`
+	VerticalPodAutoscaling    *bool                        `yaml:"vertical_pod_autoscaling,omitempty" json:"vertical_pod_autoscaling,omitempty"`
+	ResourceUsageExportConfig *ResourceUsageExportConfig   `yaml:"resource_usage_export_config,omitempty" json:"resource_usage_export_config,omitempty"`
+
+	// Advanced Security
+	PodSecurityPolicy        *bool                      `yaml:"pod_security_policy,omitempty" json:"pod_security_policy,omitempty"`
+	AuthenticatorGroupsConfig *AuthenticatorGroupsConfig `yaml:"authenticator_groups_config,omitempty" json:"authenticator_groups_config,omitempty"`
+
+	// Observability
+	NotificationConfig       *NotificationConfig `yaml:"notification_config,omitempty" json:"notification_config,omitempty"`
+	ManagedPrometheus        *bool               `yaml:"managed_prometheus,omitempty" json:"managed_prometheus,omitempty"`
+
+	// Cluster Lifecycle
+	EnableKubernetesAlpha *bool `yaml:"enable_kubernetes_alpha,omitempty" json:"enable_kubernetes_alpha,omitempty"`
+	EnableTPU             *bool `yaml:"enable_tpu,omitempty" json:"enable_tpu,omitempty"`
 }
 
 // IPAllocationPolicy holds IP allocation configuration
@@ -87,6 +110,18 @@ type NodePoolConfig struct {
 	ServiceAccount   string             `yaml:"service_account,omitempty" json:"service_account,omitempty"`
 	Labels           map[string]string  `yaml:"labels,omitempty" json:"labels,omitempty"`
 	Taints           []string           `yaml:"taints,omitempty" json:"taints,omitempty"`
+
+	// Cost Optimization
+	Preemptible *bool `yaml:"preemptible,omitempty" json:"preemptible,omitempty"`
+	Spot        *bool `yaml:"spot,omitempty" json:"spot,omitempty"`
+
+	// Advanced Configuration
+	ManagementConfig       *ManagementConfig       `yaml:"management,omitempty" json:"management,omitempty"`
+	NetworkConfig          *NodePoolNetworkConfig  `yaml:"network_config,omitempty" json:"network_config,omitempty"`
+	BootDiskKMSKey         string                  `yaml:"boot_disk_kms_key,omitempty" json:"boot_disk_kms_key,omitempty"`
+	ShieldedInstanceConfig *ShieldedInstanceConfig `yaml:"shielded_instance_config,omitempty" json:"shielded_instance_config,omitempty"`
+	LinuxNodeConfig        *LinuxNodeConfig        `yaml:"linux_node_config,omitempty" json:"linux_node_config,omitempty"`
+	SandboxConfig          *SandboxConfig          `yaml:"sandbox_config,omitempty" json:"sandbox_config,omitempty"`
 }
 
 // AutoscalingConfig holds autoscaling settings
@@ -107,6 +142,73 @@ type AddonsConfig struct {
 	HTTPLoadBalancing        bool `yaml:"http_load_balancing" json:"http_load_balancing"`
 	HorizontalPodAutoscaling bool `yaml:"horizontal_pod_autoscaling" json:"horizontal_pod_autoscaling"`
 	NetworkPolicy            bool `yaml:"network_policy" json:"network_policy"`
+}
+
+// PrivateClusterConfig holds private cluster configuration
+type PrivateClusterConfig struct {
+	EnablePrivateEndpoint bool   `yaml:"enable_private_endpoint,omitempty" json:"enable_private_endpoint,omitempty"`
+	MasterIPv4CIDRBlock   string `yaml:"master_ipv4_cidr_block,omitempty" json:"master_ipv4_cidr_block,omitempty"`
+}
+
+// DNSConfig holds DNS configuration
+type DNSConfig struct {
+	Provider string `yaml:"provider,omitempty" json:"provider,omitempty"` // CLOUD_DNS or KUBE_DNS
+}
+
+// GatewayAPIConfig holds Gateway API configuration
+type GatewayAPIConfig struct {
+	Enabled bool `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+}
+
+// ResourceUsageExportConfig holds resource usage export configuration
+type ResourceUsageExportConfig struct {
+	Enabled          bool   `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	BigQueryDataset  string `yaml:"bigquery_dataset,omitempty" json:"bigquery_dataset,omitempty"`
+}
+
+// AuthenticatorGroupsConfig holds RBAC authenticator groups configuration
+type AuthenticatorGroupsConfig struct {
+	Enabled       bool   `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	SecurityGroup string `yaml:"security_group,omitempty" json:"security_group,omitempty"`
+}
+
+// NotificationConfig holds cluster notification configuration
+type NotificationConfig struct {
+	Enabled   bool   `yaml:"enabled,omitempty" json:"enabled,omitempty"`
+	PubSubTopic string `yaml:"pubsub_topic,omitempty" json:"pubsub_topic,omitempty"`
+}
+
+// ManagementConfig holds node pool management configuration
+type ManagementConfig struct {
+	AutoUpgradeSchedule string              `yaml:"auto_upgrade_schedule,omitempty" json:"auto_upgrade_schedule,omitempty"`
+	UpgradeSettings     *UpgradeSettings    `yaml:"upgrade_settings,omitempty" json:"upgrade_settings,omitempty"`
+}
+
+// UpgradeSettings holds upgrade surge configuration
+type UpgradeSettings struct {
+	MaxSurge       *int64 `yaml:"max_surge,omitempty" json:"max_surge,omitempty"`
+	MaxUnavailable *int64 `yaml:"max_unavailable,omitempty" json:"max_unavailable,omitempty"`
+}
+
+// NodePoolNetworkConfig holds node pool network configuration
+type NodePoolNetworkConfig struct {
+	PodRange string `yaml:"pod_range,omitempty" json:"pod_range,omitempty"`
+}
+
+// ShieldedInstanceConfig holds shielded VM configuration for node pool
+type ShieldedInstanceConfig struct {
+	EnableSecureBoot          *bool `yaml:"enable_secure_boot,omitempty" json:"enable_secure_boot,omitempty"`
+	EnableIntegrityMonitoring *bool `yaml:"enable_integrity_monitoring,omitempty" json:"enable_integrity_monitoring,omitempty"`
+}
+
+// LinuxNodeConfig holds Linux-specific node configuration
+type LinuxNodeConfig struct {
+	Sysctls map[string]string `yaml:"sysctls,omitempty" json:"sysctls,omitempty"`
+}
+
+// SandboxConfig holds gVisor sandbox configuration
+type SandboxConfig struct {
+	Type string `yaml:"type,omitempty" json:"type,omitempty"` // "gvisor"
 }
 
 // Analyzer performs drift analysis on GKE clusters
@@ -235,6 +337,44 @@ func extractClusterConfig(cluster *container.Cluster) *ClusterConfig {
 	// Extract maintenance window
 	config.MaintenanceWindow = extractMaintenanceWindow(cluster)
 
+	// Extract advanced networking
+	config.PrivateClusterConfig = extractPrivateClusterConfigAdvanced(cluster)
+	if cluster.DefaultMaxPodsConstraint != nil {
+		config.DefaultMaxPodsPerNode = int64Ptr(cluster.DefaultMaxPodsConstraint.MaxPodsPerNode)
+	}
+	config.DNSConfig = extractDNSConfig(cluster)
+	config.GatewayAPIConfig = extractGatewayAPIConfig(cluster)
+
+	// Extract cost & resource management
+	if cluster.Autopilot != nil {
+		config.Autopilot = boolPtr(cluster.Autopilot.Enabled)
+	}
+	if cluster.VerticalPodAutoscaling != nil {
+		config.VerticalPodAutoscaling = boolPtr(cluster.VerticalPodAutoscaling.Enabled)
+	}
+	config.ResourceUsageExportConfig = extractResourceUsageExportConfig(cluster)
+
+	// Extract advanced security
+	// Note: PodSecurityPolicyConfig may not be available in all GKE API versions
+	// if cluster.PodSecurityPolicyConfig != nil {
+	// 	config.PodSecurityPolicy = boolPtr(cluster.PodSecurityPolicyConfig.Enabled)
+	// }
+	config.AuthenticatorGroupsConfig = extractAuthenticatorGroupsConfig(cluster)
+
+	// Extract observability
+	config.NotificationConfig = extractNotificationConfig(cluster)
+	if cluster.MonitoringConfig != nil && cluster.MonitoringConfig.ManagedPrometheusConfig != nil {
+		config.ManagedPrometheus = boolPtr(cluster.MonitoringConfig.ManagedPrometheusConfig.Enabled)
+	}
+
+	// Extract cluster lifecycle settings
+	if cluster.EnableKubernetesAlpha {
+		config.EnableKubernetesAlpha = boolPtr(true)
+	}
+	if cluster.EnableTpu {
+		config.EnableTPU = boolPtr(true)
+	}
+
 	return config
 }
 
@@ -262,6 +402,37 @@ func extractNodePools(cluster *container.Cluster) []*NodePoolConfig {
 			for _, taint := range np.Config.Taints {
 				pool.Taints = append(pool.Taints, fmt.Sprintf("%s=%s:%s", taint.Key, taint.Value, taint.Effect))
 			}
+
+			// Cost optimization
+			pool.Preemptible = boolPtr(np.Config.Preemptible)
+			pool.Spot = boolPtr(np.Config.Spot)
+
+			// Boot disk KMS key
+			if np.Config.BootDiskKmsKey != "" {
+				pool.BootDiskKMSKey = np.Config.BootDiskKmsKey
+			}
+
+			// Shielded instance config
+			if np.Config.ShieldedInstanceConfig != nil {
+				pool.ShieldedInstanceConfig = &ShieldedInstanceConfig{
+					EnableSecureBoot:          boolPtr(np.Config.ShieldedInstanceConfig.EnableSecureBoot),
+					EnableIntegrityMonitoring: boolPtr(np.Config.ShieldedInstanceConfig.EnableIntegrityMonitoring),
+				}
+			}
+
+			// Linux node config
+			if np.Config.LinuxNodeConfig != nil && len(np.Config.LinuxNodeConfig.Sysctls) > 0 {
+				pool.LinuxNodeConfig = &LinuxNodeConfig{
+					Sysctls: np.Config.LinuxNodeConfig.Sysctls,
+				}
+			}
+
+			// Sandbox config (gVisor)
+			if np.Config.SandboxConfig != nil {
+				pool.SandboxConfig = &SandboxConfig{
+					Type: np.Config.SandboxConfig.Type,
+				}
+			}
 		}
 
 		// Autoscaling
@@ -277,6 +448,24 @@ func extractNodePools(cluster *container.Cluster) []*NodePoolConfig {
 		if np.Management != nil {
 			pool.AutoUpgrade = np.Management.AutoUpgrade
 			pool.AutoRepair = np.Management.AutoRepair
+
+			// Management config with upgrade settings
+			if np.Management.UpgradeOptions != nil {
+				pool.ManagementConfig = &ManagementConfig{}
+				if np.UpgradeSettings != nil {
+					pool.ManagementConfig.UpgradeSettings = &UpgradeSettings{
+						MaxSurge:       int64Ptr(np.UpgradeSettings.MaxSurge),
+						MaxUnavailable: int64Ptr(np.UpgradeSettings.MaxUnavailable),
+					}
+				}
+			}
+		}
+
+		// Network config
+		if np.NetworkConfig != nil && np.NetworkConfig.PodRange != "" {
+			pool.NetworkConfig = &NodePoolNetworkConfig{
+				PodRange: np.NetworkConfig.PodRange,
+			}
 		}
 
 		nodePools = append(nodePools, pool)
@@ -360,6 +549,29 @@ func (a *Analyzer) compareClusterConfig(actual, baseline *ClusterConfig, drift *
 
 	// Maintenance Window
 	a.compareMaintenanceWindow(actual, baseline, drift)
+
+	// Advanced Networking
+	a.comparePrivateClusterConfigAdvanced(actual, baseline, drift)
+	a.compareDefaultMaxPodsPerNode(actual, baseline, drift)
+	a.compareDNSConfig(actual, baseline, drift)
+	a.compareGatewayAPIConfig(actual, baseline, drift)
+
+	// Cost & Resource Management
+	a.compareAutopilot(actual, baseline, drift)
+	a.compareVerticalPodAutoscaling(actual, baseline, drift)
+	a.compareResourceUsageExportConfig(actual, baseline, drift)
+
+	// Advanced Security
+	a.comparePodSecurityPolicy(actual, baseline, drift)
+	a.compareAuthenticatorGroupsConfig(actual, baseline, drift)
+
+	// Observability
+	a.compareNotificationConfig(actual, baseline, drift)
+	a.compareManagedPrometheus(actual, baseline, drift)
+
+	// Cluster Lifecycle
+	a.compareKubernetesAlpha(actual, baseline, drift)
+	a.compareTPU(actual, baseline, drift)
 
 	// Compare master authorized networks if specified in baseline
 	if len(baseline.MasterAuthorizedNets) > 0 {
@@ -837,6 +1049,411 @@ func (a *Analyzer) compareNodePools(actualPools []*NodePoolConfig, baseline *Nod
 				Expected: fmt.Sprintf("%v", baseline.AutoRepair),
 				Actual:   fmt.Sprintf("%v", pool.AutoRepair),
 				Severity: "high",
+			})
+		}
+
+		// Preemptible (cost optimization)
+		if baseline.Preemptible != nil {
+			actualPreempt := false
+			if pool.Preemptible != nil {
+				actualPreempt = *pool.Preemptible
+			}
+			if actualPreempt != *baseline.Preemptible {
+				drift.Drifts = append(drift.Drifts, Drift{
+					Field:    fmt.Sprintf("%s.preemptible", poolPrefix),
+					Expected: fmt.Sprintf("%v", *baseline.Preemptible),
+					Actual:   fmt.Sprintf("%v", actualPreempt),
+					Severity: "high",
+				})
+			}
+		}
+
+		// Spot instances (cost optimization)
+		if baseline.Spot != nil {
+			actualSpot := false
+			if pool.Spot != nil {
+				actualSpot = *pool.Spot
+			}
+			if actualSpot != *baseline.Spot {
+				drift.Drifts = append(drift.Drifts, Drift{
+					Field:    fmt.Sprintf("%s.spot", poolPrefix),
+					Expected: fmt.Sprintf("%v", *baseline.Spot),
+					Actual:   fmt.Sprintf("%v", actualSpot),
+					Severity: "high",
+				})
+			}
+		}
+
+		// Boot disk KMS key
+		if baseline.BootDiskKMSKey != "" && pool.BootDiskKMSKey != baseline.BootDiskKMSKey {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    fmt.Sprintf("%s.boot_disk_kms_key", poolPrefix),
+				Expected: baseline.BootDiskKMSKey,
+				Actual:   pool.BootDiskKMSKey,
+				Severity: "medium",
+			})
+		}
+
+		// Shielded instance config
+		if baseline.ShieldedInstanceConfig != nil && pool.ShieldedInstanceConfig != nil {
+			if baseline.ShieldedInstanceConfig.EnableSecureBoot != nil && pool.ShieldedInstanceConfig.EnableSecureBoot != nil {
+				if *pool.ShieldedInstanceConfig.EnableSecureBoot != *baseline.ShieldedInstanceConfig.EnableSecureBoot {
+					drift.Drifts = append(drift.Drifts, Drift{
+						Field:    fmt.Sprintf("%s.shielded_instance_config.enable_secure_boot", poolPrefix),
+						Expected: fmt.Sprintf("%v", *baseline.ShieldedInstanceConfig.EnableSecureBoot),
+						Actual:   fmt.Sprintf("%v", *pool.ShieldedInstanceConfig.EnableSecureBoot),
+						Severity: "medium",
+					})
+				}
+			}
+			if baseline.ShieldedInstanceConfig.EnableIntegrityMonitoring != nil && pool.ShieldedInstanceConfig.EnableIntegrityMonitoring != nil {
+				if *pool.ShieldedInstanceConfig.EnableIntegrityMonitoring != *baseline.ShieldedInstanceConfig.EnableIntegrityMonitoring {
+					drift.Drifts = append(drift.Drifts, Drift{
+						Field:    fmt.Sprintf("%s.shielded_instance_config.enable_integrity_monitoring", poolPrefix),
+						Expected: fmt.Sprintf("%v", *baseline.ShieldedInstanceConfig.EnableIntegrityMonitoring),
+						Actual:   fmt.Sprintf("%v", *pool.ShieldedInstanceConfig.EnableIntegrityMonitoring),
+						Severity: "medium",
+					})
+				}
+			}
+		}
+
+		// Management config - upgrade settings
+		if baseline.ManagementConfig != nil && baseline.ManagementConfig.UpgradeSettings != nil {
+			if pool.ManagementConfig != nil && pool.ManagementConfig.UpgradeSettings != nil {
+				if baseline.ManagementConfig.UpgradeSettings.MaxSurge != nil && pool.ManagementConfig.UpgradeSettings.MaxSurge != nil {
+					if *pool.ManagementConfig.UpgradeSettings.MaxSurge != *baseline.ManagementConfig.UpgradeSettings.MaxSurge {
+						drift.Drifts = append(drift.Drifts, Drift{
+							Field:    fmt.Sprintf("%s.management.upgrade_settings.max_surge", poolPrefix),
+							Expected: fmt.Sprintf("%d", *baseline.ManagementConfig.UpgradeSettings.MaxSurge),
+							Actual:   fmt.Sprintf("%d", *pool.ManagementConfig.UpgradeSettings.MaxSurge),
+							Severity: "medium",
+						})
+					}
+				}
+				if baseline.ManagementConfig.UpgradeSettings.MaxUnavailable != nil && pool.ManagementConfig.UpgradeSettings.MaxUnavailable != nil {
+					if *pool.ManagementConfig.UpgradeSettings.MaxUnavailable != *baseline.ManagementConfig.UpgradeSettings.MaxUnavailable {
+						drift.Drifts = append(drift.Drifts, Drift{
+							Field:    fmt.Sprintf("%s.management.upgrade_settings.max_unavailable", poolPrefix),
+							Expected: fmt.Sprintf("%d", *baseline.ManagementConfig.UpgradeSettings.MaxUnavailable),
+							Actual:   fmt.Sprintf("%d", *pool.ManagementConfig.UpgradeSettings.MaxUnavailable),
+							Severity: "medium",
+						})
+					}
+				}
+			}
+		}
+
+		// Network config - pod range
+		if baseline.NetworkConfig != nil && baseline.NetworkConfig.PodRange != "" {
+			actualPodRange := ""
+			if pool.NetworkConfig != nil {
+				actualPodRange = pool.NetworkConfig.PodRange
+			}
+			if actualPodRange != baseline.NetworkConfig.PodRange {
+				drift.Drifts = append(drift.Drifts, Drift{
+					Field:    fmt.Sprintf("%s.network_config.pod_range", poolPrefix),
+					Expected: baseline.NetworkConfig.PodRange,
+					Actual:   actualPodRange,
+					Severity: "medium",
+				})
+			}
+		}
+
+		// Sandbox config (gVisor)
+		if baseline.SandboxConfig != nil && baseline.SandboxConfig.Type != "" {
+			actualSandbox := "none"
+			if pool.SandboxConfig != nil {
+				actualSandbox = pool.SandboxConfig.Type
+			}
+			if actualSandbox != baseline.SandboxConfig.Type {
+				drift.Drifts = append(drift.Drifts, Drift{
+					Field:    fmt.Sprintf("%s.sandbox_config.type", poolPrefix),
+					Expected: baseline.SandboxConfig.Type,
+					Actual:   actualSandbox,
+					Severity: "low",
+				})
+			}
+		}
+	}
+}
+
+// comparePrivateClusterConfigAdvanced compares advanced private cluster configuration
+func (a *Analyzer) comparePrivateClusterConfigAdvanced(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.PrivateClusterConfig != nil {
+		if actual.PrivateClusterConfig == nil {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.private_cluster_config",
+				Expected: "configured",
+				Actual:   "not configured",
+				Severity: "high",
+			})
+			return
+		}
+
+		if actual.PrivateClusterConfig.EnablePrivateEndpoint != baseline.PrivateClusterConfig.EnablePrivateEndpoint {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.private_cluster_config.enable_private_endpoint",
+				Expected: fmt.Sprintf("%v", baseline.PrivateClusterConfig.EnablePrivateEndpoint),
+				Actual:   fmt.Sprintf("%v", actual.PrivateClusterConfig.EnablePrivateEndpoint),
+				Severity: "critical",
+			})
+		}
+
+		if baseline.PrivateClusterConfig.MasterIPv4CIDRBlock != "" &&
+			actual.PrivateClusterConfig.MasterIPv4CIDRBlock != baseline.PrivateClusterConfig.MasterIPv4CIDRBlock {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.private_cluster_config.master_ipv4_cidr_block",
+				Expected: baseline.PrivateClusterConfig.MasterIPv4CIDRBlock,
+				Actual:   actual.PrivateClusterConfig.MasterIPv4CIDRBlock,
+				Severity: "high",
+			})
+		}
+	}
+}
+
+// compareDefaultMaxPodsPerNode compares default max pods per node
+func (a *Analyzer) compareDefaultMaxPodsPerNode(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.DefaultMaxPodsPerNode != nil {
+		if actual.DefaultMaxPodsPerNode == nil {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.default_max_pods_per_node",
+				Expected: fmt.Sprintf("%d", *baseline.DefaultMaxPodsPerNode),
+				Actual:   "not set",
+				Severity: "medium",
+			})
+		} else if *actual.DefaultMaxPodsPerNode != *baseline.DefaultMaxPodsPerNode {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.default_max_pods_per_node",
+				Expected: fmt.Sprintf("%d", *baseline.DefaultMaxPodsPerNode),
+				Actual:   fmt.Sprintf("%d", *actual.DefaultMaxPodsPerNode),
+				Severity: "medium",
+			})
+		}
+	}
+}
+
+// compareDNSConfig compares DNS configuration
+func (a *Analyzer) compareDNSConfig(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.DNSConfig != nil && baseline.DNSConfig.Provider != "" {
+		if actual.DNSConfig == nil || actual.DNSConfig.Provider != baseline.DNSConfig.Provider {
+			actualProvider := "not set"
+			if actual.DNSConfig != nil {
+				actualProvider = actual.DNSConfig.Provider
+			}
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.dns_config.provider",
+				Expected: baseline.DNSConfig.Provider,
+				Actual:   actualProvider,
+				Severity: "medium",
+			})
+		}
+	}
+}
+
+// compareGatewayAPIConfig compares Gateway API configuration
+func (a *Analyzer) compareGatewayAPIConfig(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.GatewayAPIConfig != nil {
+		actualEnabled := false
+		if actual.GatewayAPIConfig != nil {
+			actualEnabled = actual.GatewayAPIConfig.Enabled
+		}
+		if actualEnabled != baseline.GatewayAPIConfig.Enabled {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.gateway_api_config.enabled",
+				Expected: fmt.Sprintf("%v", baseline.GatewayAPIConfig.Enabled),
+				Actual:   fmt.Sprintf("%v", actualEnabled),
+				Severity: "medium",
+			})
+		}
+	}
+}
+
+// compareAutopilot compares Autopilot mode
+func (a *Analyzer) compareAutopilot(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.Autopilot != nil {
+		actualAutopilot := false
+		if actual.Autopilot != nil {
+			actualAutopilot = *actual.Autopilot
+		}
+		if actualAutopilot != *baseline.Autopilot {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.autopilot",
+				Expected: fmt.Sprintf("%v", *baseline.Autopilot),
+				Actual:   fmt.Sprintf("%v", actualAutopilot),
+				Severity: "critical",
+			})
+		}
+	}
+}
+
+// compareVerticalPodAutoscaling compares VPA configuration
+func (a *Analyzer) compareVerticalPodAutoscaling(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.VerticalPodAutoscaling != nil {
+		actualVPA := false
+		if actual.VerticalPodAutoscaling != nil {
+			actualVPA = *actual.VerticalPodAutoscaling
+		}
+		if actualVPA != *baseline.VerticalPodAutoscaling {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.vertical_pod_autoscaling",
+				Expected: fmt.Sprintf("%v", *baseline.VerticalPodAutoscaling),
+				Actual:   fmt.Sprintf("%v", actualVPA),
+				Severity: "medium",
+			})
+		}
+	}
+}
+
+// compareResourceUsageExportConfig compares resource usage export configuration
+func (a *Analyzer) compareResourceUsageExportConfig(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.ResourceUsageExportConfig != nil {
+		if actual.ResourceUsageExportConfig == nil {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.resource_usage_export_config",
+				Expected: "configured",
+				Actual:   "not configured",
+				Severity: "low",
+			})
+			return
+		}
+
+		if actual.ResourceUsageExportConfig.Enabled != baseline.ResourceUsageExportConfig.Enabled {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.resource_usage_export_config.enabled",
+				Expected: fmt.Sprintf("%v", baseline.ResourceUsageExportConfig.Enabled),
+				Actual:   fmt.Sprintf("%v", actual.ResourceUsageExportConfig.Enabled),
+				Severity: "low",
+			})
+		}
+
+		if baseline.ResourceUsageExportConfig.BigQueryDataset != "" &&
+			actual.ResourceUsageExportConfig.BigQueryDataset != baseline.ResourceUsageExportConfig.BigQueryDataset {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.resource_usage_export_config.bigquery_dataset",
+				Expected: baseline.ResourceUsageExportConfig.BigQueryDataset,
+				Actual:   actual.ResourceUsageExportConfig.BigQueryDataset,
+				Severity: "low",
+			})
+		}
+	}
+}
+
+// comparePodSecurityPolicy compares Pod Security Policy configuration
+func (a *Analyzer) comparePodSecurityPolicy(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.PodSecurityPolicy != nil {
+		actualPSP := false
+		if actual.PodSecurityPolicy != nil {
+			actualPSP = *actual.PodSecurityPolicy
+		}
+		if actualPSP != *baseline.PodSecurityPolicy {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.pod_security_policy",
+				Expected: fmt.Sprintf("%v", *baseline.PodSecurityPolicy),
+				Actual:   fmt.Sprintf("%v", actualPSP),
+				Severity: "high",
+			})
+		}
+	}
+}
+
+// compareAuthenticatorGroupsConfig compares authenticator groups configuration
+func (a *Analyzer) compareAuthenticatorGroupsConfig(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.AuthenticatorGroupsConfig != nil {
+		if actual.AuthenticatorGroupsConfig == nil {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.authenticator_groups_config",
+				Expected: "configured",
+				Actual:   "not configured",
+				Severity: "medium",
+			})
+			return
+		}
+
+		if actual.AuthenticatorGroupsConfig.Enabled != baseline.AuthenticatorGroupsConfig.Enabled {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.authenticator_groups_config.enabled",
+				Expected: fmt.Sprintf("%v", baseline.AuthenticatorGroupsConfig.Enabled),
+				Actual:   fmt.Sprintf("%v", actual.AuthenticatorGroupsConfig.Enabled),
+				Severity: "medium",
+			})
+		}
+	}
+}
+
+// compareNotificationConfig compares notification configuration
+func (a *Analyzer) compareNotificationConfig(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.NotificationConfig != nil {
+		if actual.NotificationConfig == nil {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.notification_config",
+				Expected: "configured",
+				Actual:   "not configured",
+				Severity: "low",
+			})
+			return
+		}
+
+		if actual.NotificationConfig.Enabled != baseline.NotificationConfig.Enabled {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.notification_config.enabled",
+				Expected: fmt.Sprintf("%v", baseline.NotificationConfig.Enabled),
+				Actual:   fmt.Sprintf("%v", actual.NotificationConfig.Enabled),
+				Severity: "low",
+			})
+		}
+	}
+}
+
+// compareManagedPrometheus compares managed Prometheus configuration
+func (a *Analyzer) compareManagedPrometheus(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.ManagedPrometheus != nil {
+		actualMP := false
+		if actual.ManagedPrometheus != nil {
+			actualMP = *actual.ManagedPrometheus
+		}
+		if actualMP != *baseline.ManagedPrometheus {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.managed_prometheus",
+				Expected: fmt.Sprintf("%v", *baseline.ManagedPrometheus),
+				Actual:   fmt.Sprintf("%v", actualMP),
+				Severity: "low",
+			})
+		}
+	}
+}
+
+// compareKubernetesAlpha compares Kubernetes alpha features flag
+func (a *Analyzer) compareKubernetesAlpha(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.EnableKubernetesAlpha != nil {
+		actualAlpha := false
+		if actual.EnableKubernetesAlpha != nil {
+			actualAlpha = *actual.EnableKubernetesAlpha
+		}
+		if actualAlpha != *baseline.EnableKubernetesAlpha {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.enable_kubernetes_alpha",
+				Expected: fmt.Sprintf("%v", *baseline.EnableKubernetesAlpha),
+				Actual:   fmt.Sprintf("%v", actualAlpha),
+				Severity: "low",
+			})
+		}
+	}
+}
+
+// compareTPU compares TPU enablement
+func (a *Analyzer) compareTPU(actual, baseline *ClusterConfig, drift *ClusterDrift) {
+	if baseline.EnableTPU != nil {
+		actualTPU := false
+		if actual.EnableTPU != nil {
+			actualTPU = *actual.EnableTPU
+		}
+		if actualTPU != *baseline.EnableTPU {
+			drift.Drifts = append(drift.Drifts, Drift{
+				Field:    "cluster.enable_tpu",
+				Expected: fmt.Sprintf("%v", *baseline.EnableTPU),
+				Actual:   fmt.Sprintf("%v", actualTPU),
+				Severity: "low",
 			})
 		}
 	}
