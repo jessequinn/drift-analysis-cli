@@ -57,7 +57,7 @@ func init() {
 	sqlDbCmd.Flags().StringVar(&cacheDir, "cache-dir", "", "cache directory (default: .drift-cache/database-schemas)")
 	sqlDbCmd.Flags().BoolVar(&inspectAll, "all", false, "inspect all database connections in config")
 	sqlDbCmd.Flags().StringVarP(&dbOutputFormat, "format", "f", "summary", "output format: summary|full|ddl|json|yaml")
-	sqlDbCmd.Flags().StringVarP(&outputDir, "output-dir", "o", "", "output directory for generated files (default: current directory)")
+	sqlDbCmd.Flags().StringVarP(&outputDir, "output-dir", "d", "", "output directory for generated files (default: current directory)")
 }
 
 func runSQLDb(cmd *cobra.Command, args []string) error {
