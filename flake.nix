@@ -1,5 +1,5 @@
 {
-  description = "ZPE Systems DevSecOps DevShell";
+  description = "GCP Drift Analysis DevShell";
 
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
